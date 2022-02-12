@@ -74,7 +74,8 @@ def scalping_trade(coinString, coin):
                         # 기존 주문을 취소하고
                         upbit.cancel_order(coinOrderDic[coinString + 'Order_1']['uuid'])
                         # 현재 보유 개수만큼 매도 한다. (현재 매수 호과로 전량 매도)
-                        result = upbit.sell_market_order("KRW-" + coin, upbit.get_balance("KRW-" + coin))
+                        # result = upbit.sell_market_order("KRW-" + coin, upbit.get_balance("KRW-" + coin)) # 이건 price가 None으로 나와서 못쓰겠다.
+                        result = upbit.sell_limit_order("KRW-" + coin, coinBidPrice[coinString], upbit.get_balance("KRW-" + coin))  # 현재 보유 개수만큼 매도 한다. (현재 매수 호과로 매도)
                         coinOrderDic[coinString + 'Order_1'] = result
 
     if coinOrderCount[coinString] == 2: # 주문 한것이 2개 있을 때
@@ -93,7 +94,8 @@ def scalping_trade(coinString, coin):
             if upbit.get_order(coinOrderDic[coinString + 'Order_2']['uuid'])['side'] == "bid" and upbit.get_order(coinOrderDic[coinString + 'Order_2']['uuid'])['state'] == "done":
                 # 원래 판매하려는 매도 호과보다 현재 매수 호과가 높은지 체크
                 if float(upbit.get_order(coinOrderDic[coinString + 'Order_2']['uuid'])['price']) + 5  <= coinBidPrice[coinString]:
-                    result = upbit.sell_market_order("KRW-" + coin, upbit.get_balance("KRW-" + coin)) # 현재 보유 개수만큼 매도 한다. (현재 매수 호과로 매도)
+                    
+                    result = upbit.sell_limit_order("KRW-" + coin, coinBidPrice[coinString], upbit.get_balance("KRW-" + coin))  # 현재 보유 개수만큼 매도 한다. (현재 매수 호과로 매도)
                     coinOrderDic[coinString + 'Order_1'] = result
                     coinOrderCount[coinString] = 1
                 else:
