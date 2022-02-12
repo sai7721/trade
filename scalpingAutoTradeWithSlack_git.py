@@ -4,7 +4,7 @@ import requests
 
 access = "SijZbF3zKypf6A9SBbEgg8XxuUgR8YxmxG0P0OtP"
 secret = "K6OKreFQ1GPGmzAx6p1VGdU4Ac2keR1eIlM9DPtd"
-myToken = "xoxb-3058510383045-3061444989411-VnM7ei4BKI3AjaCDdBXQxboz"
+myToken = "-"
 
 def post_message(token, channel, text):
     """슬랙 메시지 전송"""
@@ -15,7 +15,7 @@ def post_message(token, channel, text):
 
 def scalping_trade(coinString, coin):
     """스캘핑 트레이드"""
-    coinBidPrice[coinString] = pyupbit.get_orderbook(ticker="KRW-" + coin)["orderbook_units"][0]["bid_price"] - 1000     # KRW-coin1 현재 매수 호과 (원화 금액)
+    coinBidPrice[coinString] = pyupbit.get_orderbook(ticker="KRW-" + coin)["orderbook_units"][0]["bid_price"] - 50     # KRW-coin1 현재 매수 호과 (원화 금액)
     if coinOrderCount[coinString] == 0 and 4500 > coinBidPrice[coinString] > 1000: # 아직 주문한게 없고, 매수 호과가 1,000원 초과 & 4500 미만 일 때
         # 지정가 매수
         # 원화 시장에 coin1을 현재 매수 호과에 seed_1Base 만큼 주문
@@ -27,10 +27,14 @@ def scalping_trade(coinString, coin):
     if coinOrderCount[coinString] == 1: # 주문 한것이 1개 있을 때
         #슬랙 메시지
         post_message(myToken,"#coin", "주문 한것이 1개 있을 때 체크 중")
+        post_message(myToken,"#coin", coin)
         post_message(myToken,"#coin", upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['side'])
         post_message(myToken,"#coin", upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['state'])
         # 'side' 확인 = (bid : 매수, ask : 매도)
         # 'state' 확인 = (cancel : 취소, wait : 대기, done : 거래 완료)
+        if upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['side'] == "bid" and upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['state'] == "wait":
+            post_message("매수 대기중")
+
         # 매수가 완료 되었는지 체크
         if upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['side'] == "bid" and upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['state'] == "done":
             #슬랙 메시지
@@ -38,6 +42,8 @@ def scalping_trade(coinString, coin):
             # 매수가 완료되었으면, 매수가 보다 5원 높게 판매 (보유 수량만큼 판매)
             result = upbit.sell_limit_order("KRW-" + coin, upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['price'] + 5, upbit.get_balance("KRW-" + coin))
             coinOrderDic[coinString + 'Order_1'] = result
+            #슬랙 메시지
+            post_message(myToken,"#coin", result)
         # 매도 상태 체크
         if upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['side'] == "ask":
             #매도가 완료되었는지 체크
