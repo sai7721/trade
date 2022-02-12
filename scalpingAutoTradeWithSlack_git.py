@@ -15,7 +15,7 @@ def post_message(token, channel, text):
 
 def scalping_trade(coinString, coin):
     """스캘핑 트레이드"""
-    coinBidPrice[coinString] = pyupbit.get_orderbook(ticker="KRW-" + coin)["orderbook_units"][0]["bid_price"] - 50     # KRW-coin1 현재 매수 호과 (원화 금액)
+    coinBidPrice[coinString] = pyupbit.get_orderbook(ticker="KRW-" + coin)["orderbook_units"][0]["bid_price"] - 5     # KRW-coin1 현재 매수 호과 (원화 금액)
     if coinOrderCount[coinString] == 0 and 4500 > coinBidPrice[coinString] > 1000: # 아직 주문한게 없고, 매수 호과가 1,000원 초과 & 4500 미만 일 때
         # 지정가 매수
         # 원화 시장에 coin1을 현재 매수 호과에 seed_1Base 만큼 주문
@@ -139,8 +139,8 @@ coinOrderDic = {'coin1Order_1': coin1Order_1, 'coin1Order_2': coin1Order_2,
 while True:
     try:
         scalping_trade('coin1', coin1)
-        scalping_trade('coin2', coin2)
-        scalping_trade('coin3', coin3)
+        #scalping_trade('coin2', coin2)
+        #scalping_trade('coin3', coin3)
         time.sleep(1)
     except Exception as e:
         print(e)
