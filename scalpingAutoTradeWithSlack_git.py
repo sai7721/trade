@@ -27,15 +27,15 @@ def scalping_trade(coinString, coin):
     if coinOrderCount[coinString] == 1: # 주문 한것이 1개 있을 때
         #슬랙 메시지
         post_message(myToken,"#coin", "주문 한것이 1개 있을 때 체크 중")
-        post_message(myToken,"#coin", coin)
-        post_message(myToken,"#coin", upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['side'])
-        post_message(myToken,"#coin", upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['state'])
+        post_message(myToken,"#coin", upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['side'] == "bid" and upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['state'] == "wait")
         # 'side' 확인 = (bid : 매수, ask : 매도)
         # 'state' 확인 = (cancel : 취소, wait : 대기, done : 거래 완료)
         if upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['side'] == "bid" and upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['state'] == "wait":
+            #슬랙 메시지
             post_message("매수 대기중")
             # 매수 대기 중인 가격 보다 현재 호가가 높으면, 매수 대기 중인 것을 취소하고 새로 매수 대기한다.
             if coinBidPrice[coinString] > upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['price']:
+                #슬랙 메시지
                 post_message("매수 대기 중인 가격 보다 현재 호가가 높으면, 매수 대기 중인 것을 취소하고 새로 매수 대기한다.")
                 upbit.cancel_order(coinOrderDic[coinString + 'Order_1']['uuid'])
                 # 지정가 매수
