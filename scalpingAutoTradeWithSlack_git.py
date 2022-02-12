@@ -28,8 +28,8 @@ def scalping_trade(coinString, coin):
         # 'side' 확인 = (bid : 매수, ask : 매도)
         # 'state' 확인 = (cancel : 취소, wait : 대기, done : 거래 완료)
         if upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['side'] == "bid" and upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['state'] == "wait":
-            # 매수 대기 중인 가격 보다 현재 호가가 높으면, 매수 대기 중인 것을 취소하고 새로 매수 대기한다.
-            if coinBidPrice[coinString] > float(upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['price']):
+            # 매수 대기 중인 가격+10 보다 현재 호가가 높거나 같으면, 매수 대기 중인 것을 취소하고 새로 매수 대기한다.
+            if coinBidPrice[coinString] >= float(upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['price']) + 10:
                 upbit.cancel_order(coinOrderDic[coinString + 'Order_1']['uuid'])
                 # 지정가 매수
                 # 원화 시장에 coin1을 현재 매수 호과에 seed_1Base 만큼 주문
@@ -46,8 +46,12 @@ def scalping_trade(coinString, coin):
         if upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['side'] == "ask":
             #매도가 완료되었는지 체크
             if upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['state'] == "done":
-                # 매도가 완료되었으면 초기화
-                coinOrderCount[coinString] = 0
+                # 매도가 완료되었으면 매도 금액 -5 금액으로 매수 주문
+                coinScaleTradingCount[coinString] = 0
+                price = float(upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['price']) - 5
+                result = upbit.buy_limit_order("KRW-" + coin, price, seed_1Base / price)
+                coinOrderDic[coinString + 'Order_1'] = result
+
             else:
                 # 현재 매수 호과가 지금 매도 중인 가격보다 -15 보다 작거나 같을 때
                 if coinBidPrice[coinString] <= float(upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['price']) - 15:
@@ -79,8 +83,12 @@ def scalping_trade(coinString, coin):
             # 'coin1Order_1'이 매도되었는데, 'coin1Order_2'가 매수 주문 중이면, 해당 주문을 취소한다.
             if upbit.get_order(coinOrderDic[coinString + 'Order_2']['uuid'])['side'] == "bid" and upbit.get_order(coinOrderDic[coinString + 'Order_2']['uuid'])['state'] == "wait":
                 upbit.cancel_order(coinOrderDic[coinString + 'Order_2']['uuid'])
-                # 매도가 모두 완료되었으므로 초기화
-                coinOrderCount[coinString] = 0
+                # 매도가 모두 완료되었으므로 매도 금액 -5 금액으로 매수 주문
+                coinScaleTradingCount[coinString] = 0
+                price = float(upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['price']) - 5
+                result = upbit.buy_limit_order("KRW-" + coin, price, seed_1Base / price)
+                coinOrderDic[coinString + 'Order_1'] = result
+                coinOrderCount[coinString] = 1
             # 'coin1Order_1'이 매도되었는데, 'coin1Order_2'가 매수 완료 되었으면 'coin1Order_2' 매도 처리하면서 'coin1Order_1'에 값을 넣어준다.
             if upbit.get_order(coinOrderDic[coinString + 'Order_2']['uuid'])['side'] == "bid" and upbit.get_order(coinOrderDic[coinString + 'Order_2']['uuid'])['state'] == "done":
                 # 원래 판매하려는 매도 호과보다 현재 매수 호과가 높은지 체크
