@@ -1,10 +1,11 @@
 import time
 import pyupbit
+import datetime
 import requests
 
-access = "key"
-secret = "key"
-myToken = "key"
+access = "SijZbF3zKypf6A9SBbEgg8XxuUgR8YxmxG0P0OtP"
+secret = "K6OKreFQ1GPGmzAx6p1VGdU4Ac2keR1eIlM9DPtd"
+myToken = "xoxb-3058510383045-3061444989411-UX34dYH1ytkbpen1JcdogCHG"
 
 def post_message(token, channel, text):
     """슬랙 메시지 전송"""
@@ -15,7 +16,7 @@ def post_message(token, channel, text):
 
 def scalping_trade(coinString, coin):
     """스캘핑 트레이드"""
-    coinBidPrice[coinString] = pyupbit.get_orderbook(ticker="KRW-" + coin)["orderbook_units"][0]["bid_price"]     # KRW-coin1 현재 매수 호과 (원화 금액)
+    coinBidPrice[coinString] = pyupbit.get_orderbook(ticker="KRW-" + coin)["orderbook_units"][0]["bid_price"] - 1000     # KRW-coin1 현재 매수 호과 (원화 금액)
     if coinOrderCount[coinString] == 0 and 4500 > coinBidPrice[coinString] > 1000: # 아직 주문한게 없고, 매수 호과가 1,000원 초과 & 4500 미만 일 때
         # 지정가 매수
         # 원화 시장에 coin1을 현재 매수 호과에 seed_1Base 만큼 주문
@@ -132,5 +133,5 @@ while True:
         time.sleep(1)
     except Exception as e:
         print(e)
-        post_message(myToken,"#coin", "스캘핑 트레이드 오류 : " + e)
+        post_message(myToken,"#coin", e)
         time.sleep(1)
