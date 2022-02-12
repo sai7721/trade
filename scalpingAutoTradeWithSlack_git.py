@@ -49,8 +49,8 @@ def scalping_trade(coinString, coin):
                 # 매도가 완료되었으면 초기화
                 coinOrderCount[coinString] = 0
             else:
-                # 현재 매수 호과가 지금 매도 중인 가격보다 -15 보다 적을 때
-                if coinBidPrice[coinString] < float(upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['price']) - 15:
+                # 현재 매수 호과가 지금 매도 중인 가격보다 -15 보다 작거나 같을 때
+                if coinBidPrice[coinString] <= float(upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['price']) - 15:
                     # 매수 호과가 -10보다 작거나 같고, 물타기를 하지 않았을 때
                     if coinCheckPrice[coinString] + 20 >= coinBidPrice[coinString] and coinScaleTradingCount[coinString] == 0:
                         coinScaleTradingCount[coinString] = 1
