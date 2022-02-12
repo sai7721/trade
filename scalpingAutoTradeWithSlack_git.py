@@ -25,18 +25,11 @@ def scalping_trade(coinString, coin):
         # 손절라인 계산
         coinCheckPrice[coinString] = coinBidPrice[coinString] - 30
     if coinOrderCount[coinString] == 1: # 주문 한것이 1개 있을 때
-        #슬랙 메시지
-        post_message(myToken,"#coin", "주문 한것이 1개 있을 때 체크 중")
-        post_message(myToken,"#coin", upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['side'] == "bid" and upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['state'] == "wait")
         # 'side' 확인 = (bid : 매수, ask : 매도)
         # 'state' 확인 = (cancel : 취소, wait : 대기, done : 거래 완료)
         if upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['side'] == "bid" and upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['state'] == "wait":
-            #슬랙 메시지
-            post_message("매수 대기중")
             # 매수 대기 중인 가격 보다 현재 호가가 높으면, 매수 대기 중인 것을 취소하고 새로 매수 대기한다.
-            if coinBidPrice[coinString] > upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['price']:
-                #슬랙 메시지
-                post_message("매수 대기 중인 가격 보다 현재 호가가 높으면, 매수 대기 중인 것을 취소하고 새로 매수 대기한다.")
+            if coinBidPrice[coinString] > float(upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['price']):
                 upbit.cancel_order(coinOrderDic[coinString + 'Order_1']['uuid'])
                 # 지정가 매수
                 # 원화 시장에 coin1을 현재 매수 호과에 seed_1Base 만큼 주문
@@ -46,17 +39,9 @@ def scalping_trade(coinString, coin):
                 coinCheckPrice[coinString] = coinBidPrice[coinString] - 30
         # 매수가 완료 되었는지 체크
         if upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['side'] == "bid" and upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['state'] == "done":
-            #슬랙 메시지
-            post_message(myToken,"#coin", "매수가 완료되었으면, 매수가 보다 5원 높게 판매")
-            post_message(myToken,"#coin", upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['price'] + 5)
-            post_message(myToken,"#coin", type(upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['price'] + 5))
-            post_message(myToken,"#coin", upbit.get_balance("KRW-" + coin))
-            post_message(myToken,"#coin", type(upbit.get_balance("KRW-" + coin)))
             # 매수가 완료되었으면, 매수가 보다 5원 높게 판매 (보유 수량만큼 판매)
-            result = upbit.sell_limit_order("KRW-" + coin, upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['price'] + 5, upbit.get_balance("KRW-" + coin))
+            result = upbit.sell_limit_order("KRW-" + coin, float(upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['price']) + 5, upbit.get_balance("KRW-" + coin))
             coinOrderDic[coinString + 'Order_1'] = result
-            #슬랙 메시지
-            post_message(myToken,"#coin", "여기까지는 온다.")
         # 매도 상태 체크
         if upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['side'] == "ask":
             #매도가 완료되었는지 체크
@@ -65,7 +50,7 @@ def scalping_trade(coinString, coin):
                 coinOrderCount[coinString] = 0
             else:
                 # 현재 매수 호과가 지금 매도 중인 가격보다 -15 보다 적을 때
-                if coinBidPrice[coinString] < upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['price'] - 15:
+                if coinBidPrice[coinString] < float(upbit.get_order(coinOrderDic[coinString + 'Order_1']['uuid'])['price']) - 15:
                     # 매수 호과가 -10보다 작거나 같고, 물타기를 하지 않았을 때
                     if coinCheckPrice[coinString] + 20 >= coinBidPrice[coinString] and coinScaleTradingCount[coinString] == 0:
                         coinScaleTradingCount[coinString] = 1
@@ -99,13 +84,13 @@ def scalping_trade(coinString, coin):
             # 'coin1Order_1'이 매도되었는데, 'coin1Order_2'가 매수 완료 되었으면 'coin1Order_2' 매도 처리하면서 'coin1Order_1'에 값을 넣어준다.
             if upbit.get_order(coinOrderDic[coinString + 'Order_2']['uuid'])['side'] == "bid" and upbit.get_order(coinOrderDic[coinString + 'Order_2']['uuid'])['state'] == "done":
                 # 원래 판매하려는 매도 호과보다 현재 매수 호과가 높은지 체크
-                if upbit.get_order(coinOrderDic[coinString + 'Order_2']['uuid'])['price'] + 5  <= coinBidPrice[coinString]:
+                if float(upbit.get_order(coinOrderDic[coinString + 'Order_2']['uuid'])['price']) + 5  <= coinBidPrice[coinString]:
                     result = upbit.sell_market_order("KRW-" + coin, upbit.get_balance("KRW-" + coin)) # 현재 보유 개수만큼 매도 한다. (현재 매수 호과로 매도)
                     coinOrderDic[coinString + 'Order_1'] = result
                     coinOrderCount[coinString] = 1
                 else:
                     # 매수가 보다 5원 높게 판매 (보유 수량만큼 판매)
-                    result = upbit.sell_limit_order("KRW-" + coin, upbit.get_order(coinOrderDic[coinString + 'Order_2']['uuid'])['price'] + 5, upbit.get_balance("KRW-" + coin))
+                    result = upbit.sell_limit_order("KRW-" + coin, float(upbit.get_order(coinOrderDic[coinString + 'Order_2']['uuid'])['price']) + 5, upbit.get_balance("KRW-" + coin))
                     coinOrderDic[coinString + 'Order_1'] = result
                     coinOrderCount[coinString] = 1
         # 'coin1Order_1'이 매도가 안되었으면
@@ -115,7 +100,7 @@ def scalping_trade(coinString, coin):
                 # 매수가 완료되었으면, 'coin1Order_1'의 매도를 취소
                 upbit.cancel_order(coinOrderDic[coinString + 'Order_1']['uuid'])
                 # 'coin1Order_2' 매수가 보다 5원 높게 판매 (보유 수량만큼 판매)
-                result = upbit.sell_limit_order("KRW-" + coin, upbit.get_order(coinOrderDic[coinString + 'Order_2']['uuid'])['price'] + 5, upbit.get_balance("KRW-" + coin))
+                result = upbit.sell_limit_order("KRW-" + coin, float(upbit.get_order(coinOrderDic[coinString + 'Order_2']['uuid'])['price']) + 5, upbit.get_balance("KRW-" + coin))
                 coinOrderDic[coinString + 'Order_1'] = result
                 coinOrderCount[coinString] = 1
 
@@ -152,8 +137,8 @@ coinOrderDic = {'coin1Order_1': coin1Order_1, 'coin1Order_2': coin1Order_2,
 while True:
     try:
         scalping_trade('coin1', coin1)
-        #scalping_trade('coin2', coin2)
-        #scalping_trade('coin3', coin3)
+        scalping_trade('coin2', coin2)
+        scalping_trade('coin3', coin3)
         time.sleep(1)
     except Exception as e:
         print(e)
