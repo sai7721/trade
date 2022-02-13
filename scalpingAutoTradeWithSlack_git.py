@@ -41,12 +41,12 @@ def scalping_trade(coinString, coin):
                 coinOrderCount[coinString] = 1
                 # 물타기 횟수
                 coinScaleTradingCount[coinString] = 0
-            # 목표 매수 가격 보다 현재 매도 호가가 15 이상 차이나면, 그냥 매수해버리자. (오르는 시장에 따라 붙기 위해)
-            if coinTargetBidPrice[coinString] + 15 <= coinAskPrice[coinString]:
+            # 목표 매수 가격 보다 현재 매도 호가가 10 이상 차이나면, 그냥 매수해버리자. (오르는 시장에 따라 붙기 위해)
+            if coinTargetBidPrice[coinString] + 10 <= coinAskPrice[coinString]:
                 # 현재 매도 호가로 매수 ====================================================================================================================
                 upbit.buy_market_order("KRW-" + coin, seed_1Base *0.9995) # 수수료 금액을 제외한 금액 만큼 매수한다.
                 # 평균 매수 가격 설정
-                coinAveragePrice[coinString] = coinAskPrice[coinString] + 5 # 추격 매수에서는 목표가를 높이기 위해 +5를 더한다.
+                coinAveragePrice[coinString] = coinAskPrice[coinString]
                 # 주문 카운트 설정
                 coinOrderCount[coinString] = 1
                 # 물타기 횟수
