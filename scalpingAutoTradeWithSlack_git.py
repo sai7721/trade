@@ -14,6 +14,17 @@ def post_message(token, channel, text):
         data={"channel": channel,"text": text}
     )
 
+def get_balance(ticker):
+    """매수 평균가 조회"""
+    balances = upbit.get_balances()
+    for b in balances:
+        if b['currency'] == ticker:
+            if b['avg_buy_price'] is not None:
+                return float(b['avg_buy_price'])
+            else:
+                return 0
+    return 0
+
 def scalping_trade(coinString, coin):
     """스캘핑 트레이드"""
     coinBidPrice[coinString] = pyupbit.get_orderbook(ticker="KRW-" + coin)["orderbook_units"][0]["bid_price"]     # KRW-coin1 현재 매수 호가 (원화 금액)
@@ -82,6 +93,8 @@ def scalping_trade(coinString, coin):
                 coinAveragePrice[coinString] = coinAveragePrice[coinString] - 5 # 물타기 시 평균 매수 가격이 -5가 된다.
                 # 물타기 횟수
                 coinScaleTradingCount[coinString] = 1
+                #슬랙 메시지
+                post_message(myToken,"#coin", "KRW-" + coin + ", 평균 매수 가격 :" + coinAveragePrice[coinString] + " +5 일때 판매(매도호가), 물타기 횟수 :" + coinScaleTradingCount[coinString] + ", 매수 평균가 :" + get_balance(coin))
         # 물타기 횟수가 1일 때
         if coinScaleTradingCount[coinString] == 1:
             # 평균 매수 가격 +5 보다 현재 매수 호가가 높거나 같을 때
@@ -97,9 +110,11 @@ def scalping_trade(coinString, coin):
                 # 현재 매도 호가로 매수 ====================================================================================================================
                 upbit.buy_market_order("KRW-" + coin, seed_1Base * 2 *0.9995) # 수수료 금액을 제외한 금액 만큼 매수한다.
                 # 평균 매수 가격 설정
-                coinAveragePrice[coinString] = coinAveragePrice[coinString] - 10 # 물타기 시 평균 매수 가격이 -10가 된다.
+                coinAveragePrice[coinString] = coinAveragePrice[coinString] - 5 # 물타기 시 평균 매수 가격이 -2.5가 된다.
                 # 물타기 횟수
                 coinScaleTradingCount[coinString] = 2
+                #슬랙 메시지
+                post_message(myToken,"#coin", "KRW-" + coin + ", 평균 매수 가격 :" + coinAveragePrice[coinString] + " +5 일때 판매(매도호가), 물타기 횟수 :" + coinScaleTradingCount[coinString] + ", 매수 평균가 :" + get_balance(coin))
         # 물타기 횟수가 2일 때
         if coinScaleTradingCount[coinString] == 2:
             # 평균 매수 가격 +5 보다 현재 매수 호가가 높거나 같을 때
@@ -115,9 +130,11 @@ def scalping_trade(coinString, coin):
                 # 현재 매도 호가로 매수 ====================================================================================================================
                 upbit.buy_market_order("KRW-" + coin, seed_1Base * 2 *0.9995) # 수수료 금액을 제외한 금액 만큼 매수한다.
                 # 평균 매수 가격 설정
-                coinAveragePrice[coinString] = coinAveragePrice[coinString] - 10 # 물타기 시 평균 매수 가격이 -10가 된다.
+                coinAveragePrice[coinString] = coinAveragePrice[coinString] - 5
                 # 물타기 횟수
                 coinScaleTradingCount[coinString] = 3
+                #슬랙 메시지
+                post_message(myToken,"#coin", "KRW-" + coin + ", 평균 매수 가격 :" + coinAveragePrice[coinString] + " +5 일때 판매(매도호가), 물타기 횟수 :" + coinScaleTradingCount[coinString] + ", 매수 평균가 :" + get_balance(coin))
         # 물타기 횟수가 3일 때
         if coinScaleTradingCount[coinString] == 3:
             # 평균 매수 가격 +5 보다 현재 매수 호가가 높거나 같을 때
@@ -133,9 +150,11 @@ def scalping_trade(coinString, coin):
                 # 현재 매도 호가로 매수 ====================================================================================================================
                 upbit.buy_market_order("KRW-" + coin, seed_1Base * 2 *0.9995) # 수수료 금액을 제외한 금액 만큼 매수한다.
                 # 평균 매수 가격 설정
-                coinAveragePrice[coinString] = coinAveragePrice[coinString] - 10 # 물타기 시 평균 매수 가격이 -10가 된다.
+                coinAveragePrice[coinString] = coinAveragePrice[coinString] - 5
                 # 물타기 횟수
                 coinScaleTradingCount[coinString] = 4
+                #슬랙 메시지
+                post_message(myToken,"#coin", "KRW-" + coin + ", 평균 매수 가격 :" + coinAveragePrice[coinString] + " +5 일때 판매(매도호가), 물타기 횟수 :" + coinScaleTradingCount[coinString] + ", 매수 평균가 :" + get_balance(coin))
         # 물타기 횟수가 4일 때
         if coinScaleTradingCount[coinString] == 4:
             # 평균 매수 가격 +5 보다 현재 매수 호가가 높거나 같을 때
@@ -151,9 +170,11 @@ def scalping_trade(coinString, coin):
                 # 현재 매도 호가로 매수 ====================================================================================================================
                 upbit.buy_market_order("KRW-" + coin, seed_1Base * 2 *0.9995) # 수수료 금액을 제외한 금액 만큼 매수한다.
                 # 평균 매수 가격 설정
-                coinAveragePrice[coinString] = coinAveragePrice[coinString] - 10 # 물타기 시 평균 매수 가격이 -10가 된다.
+                coinAveragePrice[coinString] = coinAveragePrice[coinString] - 5
                 # 물타기 횟수
                 coinScaleTradingCount[coinString] = 5
+                #슬랙 메시지
+                post_message(myToken,"#coin", "KRW-" + coin + ", 평균 매수 가격 :" + coinAveragePrice[coinString] + " +5 일때 판매(매도호가), 물타기 횟수 :" + coinScaleTradingCount[coinString] + ", 매수 평균가 :" + get_balance(coin))
         # 물타기 횟수가 5일 때
         if coinScaleTradingCount[coinString] == 5:
             # 평균 매수 가격 +5 보다 현재 매수 호가가 높거나 같을 때
@@ -166,6 +187,8 @@ def scalping_trade(coinString, coin):
                 coinOrderCount[coinString] = 0
             # 평균 매수 가격 -15 보다 현재 매도 호가가 낮거나 같을 때 손절한다!!
             if coinAveragePrice[coinString] - 15 >= coinAskPrice[coinString]:
+                #슬랙 메시지
+                post_message(myToken,"#coin", "KRW-" + coin + ", 손절 매도가 : " + coinAskPrice[coinString] + ", 매수 평균가 :" + get_balance(coin))
                 # 현재 매수 호가로 매도 ====================================================================================================================
                 upbit.sell_market_order("KRW-" + coin, upbit.get_balance("KRW-" + coin)) # 현재 보유 개수만큼 매도 한다.
                 # 목표 매수 가격 설정
