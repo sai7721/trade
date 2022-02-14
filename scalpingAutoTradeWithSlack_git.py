@@ -167,11 +167,11 @@ coinCooldown =  {'coin1': 0, 'coin2': 0, 'coin3': 0, 'coin4': 0, 'coin5': 0, 'co
 
 while True:
     try:
-        # scalping_trade('coin1', coin1)
-        # scalping_trade('coin2', coin2)
-        # scalping_trade('coin3', coin3)
-        # scalping_trade('coin4', coin4)
-        # scalping_trade('coin5', coin5)
+        scalping_trade('coin1', coin1)
+        scalping_trade('coin2', coin2)
+        scalping_trade('coin3', coin3)
+        scalping_trade('coin4', coin4)
+        scalping_trade('coin5', coin5)
         scalping_trade('coin6', coin6)
         time.sleep(1)
     except Exception as e:
