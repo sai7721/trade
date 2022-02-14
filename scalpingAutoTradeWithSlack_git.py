@@ -27,205 +27,141 @@ def get_balance(ticker):
 
 def scalping_trade(coinString, coin):
     """스캘핑 트레이드"""
-    coinBidPrice[coinString] = pyupbit.get_orderbook(ticker="KRW-" + coin)["orderbook_units"][0]["bid_price"]     # KRW-coin1 현재 매수 호가 (원화 금액)
-    coinAskPrice[coinString] = pyupbit.get_orderbook(ticker="KRW-" + coin)["orderbook_units"][0]["ask_price"]     # KRW-coin1 현재 매도 호가 (원화 금액)
-    """손절 타이밍 이후 쿨다운 체크"""
-    cooldownState = False
-    if type(coinCooldown[coinString]) != int:
-        if coinCooldown[coinString] + datetime.timedelta(seconds=60) <= datetime.datetime.now():
-            coinCooldown[coinString] = 0
-            cooldownState = True
-    else:
-        cooldownState = True
+    # KRW-coin 현재 매수 호가 (원화 금액)
+    coinBidPrice[coinString] = pyupbit.get_orderbook(ticker="KRW-" + coin)["orderbook_units"][0]["bid_price"]
+    # KRW-coin 현재 매도 호가 (원화 금액)
+    coinAskPrice[coinString] = pyupbit.get_orderbook(ticker="KRW-" + coin)["orderbook_units"][0]["ask_price"]
 
     # 아직 주문한게 없고, 매도 호가가 1,000원 초과 & 3000원 이하 일 때
-    if coinOrderCount[coinString] == 0 and 3000 >= coinAskPrice[coinString] > 1000 and cooldownState:
-        # 목표 매수 가격이 있을 경우
-        if coinTargetBidPrice[coinString] > 0:
-            # 목표 매수 가격보다 현재 매도 호가가 낮거나 같으면 매수
-            if coinTargetBidPrice[coinString] >= coinAskPrice[coinString]:
+    if coinOrderCount[coinString] == 0 and 3000 >= coinAskPrice[coinString] > 1000:
+        # 현재 매도 호가로 매수 ====================================================================================================================
+        upbit.buy_market_order("KRW-" + coin, seed_1Base *0.9995) # 수수료 금액을 제외한 금액 만큼 매수한다.
+        coinOrderBidPrice[coinString][1] = coinAskPrice[coinString] # 주문 매수 가격
+        coinOrderBidVolume[coinString][1] = (seed_1Base *0.9995) / coinAskPrice[coinString] # 주문 매수 수량
+        coinOrderCount[coinString] = 1
+    # 주문한게 있을 때
+    if coinOrderCount[coinString] > 0:
+        # 주문 개수만큼 for문을 돌린다.
+        count = coinOrderCount[coinString]
+        for i in range(count): # 0 부터 시작
+            searchCount = count - i # 확인할 숫자(큰 수부터 확인한다.)
+            # 원하는 판매 가격과 매수 호가를 비교한다.
+            if coinOrderBidPrice[coinString][searchCount] + 5 <= coinBidPrice[coinString]:
+                # 현재 매수 호가로 매도 ====================================================================================================================
+                upbit.sell_market_order("KRW-" + coin, coinOrderBidVolume[coinString][searchCount]) # 주문 매수 수량만큼 판매한다.
+                coinOrderCount[coinString] = coinOrderCount[coinString] - 1 # 판매했으므로, 주문 카운트를 하나 차감한다.
+                coinCooldown[coinString] = 0
+            # 현재 주문 수량이 최대 주문 수량보다 적고, 매수 가격 -5보다 현재 매도호가 가격이 더 낮거나 같은지 비교한다.
+            elif coinOrderCount[coinString] < OrderMaxCount and coinOrderBidPrice[coinString][searchCount] -5 >= coinAskPrice[coinString]:
                 # 현재 매도 호가로 매수 ====================================================================================================================
                 upbit.buy_market_order("KRW-" + coin, seed_1Base *0.9995) # 수수료 금액을 제외한 금액 만큼 매수한다.
-                # 평균 매수 가격 설정
-                coinAveragePrice[coinString] = coinAskPrice[coinString]
-                # 주문 카운트 설정
-                coinOrderCount[coinString] = 1
-                # 물타기 횟수
-                coinScaleTradingCount[coinString] = 0
-            # 목표 매수 가격 보다 현재 매도 호가가 10 이상 차이나면, 그냥 매수해버리자. (오르는 시장에 따라 붙기 위해)
-            if coinTargetBidPrice[coinString] + 10 <= coinAskPrice[coinString]:
+                coinOrderBidPrice[coinString][searchCount + 1] = coinAskPrice[coinString] # 주문 매수 가격
+                coinOrderBidVolume[coinString][searchCount + 1] = (seed_1Base *0.9995) / coinAskPrice[coinString] # 주문 매수 수량
+                coinOrderCount[coinString] = coinOrderCount[coinString] + 1
+            # 매수 가격 -150보다 현재 매수 호가가 더 낮거나 같은지 비교한다.
+            elif coinOrderBidPrice[coinString][searchCount] - 150 <= coinBidPrice[coinString]:
+                # 손절 쿨타임 설정 60초 후에도 해당 가격이면, 손절한다.
+                if type(coinCooldown[coinString]) != int:
+                    if coinCooldown[coinString] + datetime.timedelta(seconds=60) <= datetime.datetime.now():
+                        #슬랙 메시지
+                        post_message(myToken,"#coin", "KRW-" + coin + ", 손절 매도가 : " + str(coinAskPrice[coinString]) + ", 매수 평균가 :" + str(get_balance(coin)))
+                        coinCooldown[coinString] = 0
+                        # 매도 호가가 1,000원 초과 일 때
+                        if coinAskPrice[coinString] > 1000:
+                            # 현재 매수 호가로 매도 ====================================================================================================================
+                            upbit.sell_market_order("KRW-" + coin, coinOrderBidVolume[coinString][searchCount]) # 주문 매수 수량만큼 판매한다.
+                            # 바로 현재 매도 호가로 매수 ================================================================================================================
+                            upbit.buy_market_order("KRW-" + coin, seed_1Base *0.9995) # 수수료 금액을 제외한 금액 만큼 매수한다.
+                            coinOrderBidPrice[coinString][searchCount + 1] = coinAskPrice[coinString] # 주문 매수 가격
+                            coinOrderBidVolume[coinString][searchCount + 1] = (seed_1Base *0.9995) / coinAskPrice[coinString] # 주문 매수 수량
+                        # 매도 호가가 1,000원 이하이면, 전량 매도
+                        else:
+                            coinOrderCount[coinString] = 0
+                            upbit.sell_market_order("KRW-" + coin, upbit.get_balance("KRW-" + coin)) # 현재 보유 개수만큼 매도 한다.
+                else:
+                    coinCooldown[coinString] = datetime.datetime.now()
+                    #슬랙 메시지
+                    post_message(myToken,"#coin", coin + "60초 후 손절합니다. 손절 매도가 : "  + str(coinAskPrice[coinString]))
+    # 여기부터는 더 낮은 금액
+    # 아직 주문한게 없고, 매도 호가가 100원 초과 & 300원 이하 일 때
+    if coinOrderCount[coinString] == 0 and 300 >= coinAskPrice[coinString] > 100:
+        # 현재 매도 호가로 매수 ====================================================================================================================
+        upbit.buy_market_order("KRW-" + coin, seed_1Base *0.9995) # 수수료 금액을 제외한 금액 만큼 매수한다.
+        coinOrderBidPrice[coinString][1] = coinAskPrice[coinString] # 주문 매수 가격
+        coinOrderBidVolume[coinString][1] = (seed_1Base *0.9995) / coinAskPrice[coinString] # 주문 매수 수량
+        coinOrderCount[coinString] = 1
+    # 주문한게 있을 때
+    if coinOrderCount[coinString] > 0:
+        # 주문 개수만큼 for문을 돌린다.
+        count = coinOrderCount[coinString]
+        for i in range(count): # 0 부터 시작
+            searchCount = count - i # 확인할 숫자(큰 수부터 확인한다.)
+            # 원하는 판매 가격과 매수 호가를 비교한다.
+            if coinOrderBidPrice[coinString][searchCount] + 1 <= coinBidPrice[coinString]:
+                # 현재 매수 호가로 매도 ====================================================================================================================
+                upbit.sell_market_order("KRW-" + coin, coinOrderBidVolume[coinString][searchCount]) # 주문 매수 수량만큼 판매한다.
+                coinOrderCount[coinString] = coinOrderCount[coinString] - 1 # 판매했으므로, 주문 카운트를 하나 차감한다.
+                coinCooldown[coinString] = 0
+            # 현재 주문 수량이 최대 주문 수량보다 적고, 매수 가격 -1보다 현재 매도호가 가격이 더 낮거나 같은지 비교한다.
+            elif coinOrderCount[coinString] < OrderMaxCount and coinOrderBidPrice[coinString][searchCount] -1 >= coinAskPrice[coinString]:
                 # 현재 매도 호가로 매수 ====================================================================================================================
                 upbit.buy_market_order("KRW-" + coin, seed_1Base *0.9995) # 수수료 금액을 제외한 금액 만큼 매수한다.
-                # 평균 매수 가격 설정
-                coinAveragePrice[coinString] = coinAskPrice[coinString]
-                # 주문 카운트 설정
-                coinOrderCount[coinString] = 1
-                # 물타기 횟수
-                coinScaleTradingCount[coinString] = 0
-        # 목표 매수 가격이 없을 경우
-        else:
-            # 현재 매도 호가로 매수 ====================================================================================================================
-            upbit.buy_market_order("KRW-" + coin, seed_1Base *0.9995) # 수수료 금액을 제외한 금액 만큼 매수한다.
-            # 평균 매수 가격 설정
-            coinAveragePrice[coinString] = coinAskPrice[coinString]
-            # 주문 카운트 설정
-            coinOrderCount[coinString] = 1
-            # 물타기 횟수
-            coinScaleTradingCount[coinString] = 0
-
-    # 주문한게(보유한 코인)이 있을 때
-    if coinOrderCount[coinString] == 1 and cooldownState:
-        # 물타기 횟수가 0일 때
-        if coinScaleTradingCount[coinString] == 0:
-            # 평균 매수 가격 +5 보다 현재 매수 호가가 높거나 같을 때
-            if coinAveragePrice[coinString] + 5 <= coinBidPrice[coinString]:
-                # 현재 매수 호가로 매도 ====================================================================================================================
-                upbit.sell_market_order("KRW-" + coin, upbit.get_balance("KRW-" + coin)) # 현재 보유 개수만큼 매도 한다.
-                # 목표 매수 가격 설정
-                coinTargetBidPrice[coinString] = coinBidPrice[coinString] - 5 # 매수 호가 -5를 목표 매수 가격으로 설정한다.
-                # 주문 카운트 설정
-                coinOrderCount[coinString] = 0
-            # 평균 매수 가격 -10 보다 현재 매도 호가가 낮거나 같을 때
-            if coinAveragePrice[coinString] - 10 >= coinAskPrice[coinString]:
-                # 현재 매도 호가로 매수 ====================================================================================================================
-                upbit.buy_market_order("KRW-" + coin, seed_1Base *0.9995) # 수수료 금액을 제외한 금액 만큼 매수한다.
-                # 평균 매수 가격 설정
-                coinAveragePrice[coinString] = coinAveragePrice[coinString] - 5 # 물타기 시 평균 매수 가격이 -5가 된다.
-                # 물타기 횟수
-                coinScaleTradingCount[coinString] = 1
-                #슬랙 메시지
-                post_message(myToken,"#coin", "KRW-" + coin + ", 평균 매수 가격 :" + str(coinAveragePrice[coinString]) + " +5 일때 판매(매도호가), 물타기 횟수 :" + str(coinScaleTradingCount[coinString]) + ", 매수 평균가 :" + str(get_balance(coin)))
-        # 물타기 횟수가 1일 때
-        if coinScaleTradingCount[coinString] == 1:
-            # 평균 매수 가격 +5 보다 현재 매수 호가가 높거나 같을 때
-            if coinAveragePrice[coinString] + 5 <= coinBidPrice[coinString]:
-                # 현재 매수 호가로 매도 ====================================================================================================================
-                upbit.sell_market_order("KRW-" + coin, upbit.get_balance("KRW-" + coin)) # 현재 보유 개수만큼 매도 한다.
-                # 목표 매수 가격 설정
-                coinTargetBidPrice[coinString] = coinBidPrice[coinString] - 5 # 매수 호가 -5를 목표 매수 가격으로 설정한다.
-                # 주문 카운트 설정
-                coinOrderCount[coinString] = 0
-            # 평균 매수 가격 -15 보다 현재 매도 호가가 낮거나 같을 때
-            if coinAveragePrice[coinString] - 15 >= coinAskPrice[coinString]:
-                # 현재 매도 호가로 매수 ====================================================================================================================
-                upbit.buy_market_order("KRW-" + coin, seed_1Base * 2 *0.9995) # 수수료 금액을 제외한 금액 만큼 매수한다.
-                # 평균 매수 가격 설정
-                coinAveragePrice[coinString] = coinAveragePrice[coinString] - 5 # 물타기 시 평균 매수 가격이 -2.5가 된다.
-                # 물타기 횟수
-                coinScaleTradingCount[coinString] = 2
-                #슬랙 메시지
-                post_message(myToken,"#coin", "KRW-" + coin + ", 평균 매수 가격 :" + str(coinAveragePrice[coinString]) + " +5 일때 판매(매도호가), 물타기 횟수 :" + str(coinScaleTradingCount[coinString]) + ", 매수 평균가 :" + str(get_balance(coin)))
-        # 물타기 횟수가 2일 때
-        if coinScaleTradingCount[coinString] == 2:
-            # 평균 매수 가격 +5 보다 현재 매수 호가가 높거나 같을 때
-            if coinAveragePrice[coinString] + 5 <= coinBidPrice[coinString]:
-                # 현재 매수 호가로 매도 ====================================================================================================================
-                upbit.sell_market_order("KRW-" + coin, upbit.get_balance("KRW-" + coin)) # 현재 보유 개수만큼 매도 한다.
-                # 목표 매수 가격 설정
-                coinTargetBidPrice[coinString] = coinBidPrice[coinString] - 5 # 매수 호가 -5를 목표 매수 가격으로 설정한다.
-                # 주문 카운트 설정
-                coinOrderCount[coinString] = 0
-            # 평균 매수 가격 -20 보다 현재 매도 호가가 낮거나 같을 때
-            if coinAveragePrice[coinString] - 20 >= coinAskPrice[coinString]:
-                # 현재 매도 호가로 매수 ====================================================================================================================
-                upbit.buy_market_order("KRW-" + coin, seed_1Base * 2 *0.9995) # 수수료 금액을 제외한 금액 만큼 매수한다.
-                # 평균 매수 가격 설정
-                coinAveragePrice[coinString] = coinAveragePrice[coinString] - 5
-                # 물타기 횟수
-                coinScaleTradingCount[coinString] = 3
-                #슬랙 메시지
-                post_message(myToken,"#coin", "KRW-" + coin + ", 평균 매수 가격 :" + str(coinAveragePrice[coinString]) + " +5 일때 판매(매도호가), 물타기 횟수 :" + str(coinScaleTradingCount[coinString]) + ", 매수 평균가 :" + str(get_balance(coin)))
-        # 물타기 횟수가 3일 때
-        if coinScaleTradingCount[coinString] == 3:
-            # 평균 매수 가격 +5 보다 현재 매수 호가가 높거나 같을 때
-            if coinAveragePrice[coinString] + 5 <= coinBidPrice[coinString]:
-                # 현재 매수 호가로 매도 ====================================================================================================================
-                upbit.sell_market_order("KRW-" + coin, upbit.get_balance("KRW-" + coin)) # 현재 보유 개수만큼 매도 한다.
-                # 목표 매수 가격 설정
-                coinTargetBidPrice[coinString] = coinBidPrice[coinString] - 5 # 매수 호가 -5를 목표 매수 가격으로 설정한다.
-                # 주문 카운트 설정
-                coinOrderCount[coinString] = 0
-            # 평균 매수 가격 -25 보다 현재 매도 호가가 낮거나 같을 때
-            if coinAveragePrice[coinString] - 25 >= coinAskPrice[coinString]:
-                # 현재 매도 호가로 매수 ====================================================================================================================
-                upbit.buy_market_order("KRW-" + coin, seed_1Base * 2 *0.9995) # 수수료 금액을 제외한 금액 만큼 매수한다.
-                # 평균 매수 가격 설정
-                coinAveragePrice[coinString] = coinAveragePrice[coinString] - 5
-                # 물타기 횟수
-                coinScaleTradingCount[coinString] = 4
-                #슬랙 메시지
-                post_message(myToken,"#coin", "KRW-" + coin + ", 평균 매수 가격 :" + str(coinAveragePrice[coinString]) + " +5 일때 판매(매도호가), 물타기 횟수 :" + str(coinScaleTradingCount[coinString]) + ", 매수 평균가 :" + str(get_balance(coin)))
-        # 물타기 횟수가 4일 때
-        if coinScaleTradingCount[coinString] == 4:
-            # 평균 매수 가격 +5 보다 현재 매수 호가가 높거나 같을 때
-            if coinAveragePrice[coinString] + 5 <= coinBidPrice[coinString]:
-                # 현재 매수 호가로 매도 ====================================================================================================================
-                upbit.sell_market_order("KRW-" + coin, upbit.get_balance("KRW-" + coin)) # 현재 보유 개수만큼 매도 한다.
-                # 목표 매수 가격 설정
-                coinTargetBidPrice[coinString] = coinBidPrice[coinString] - 5 # 매수 호가 -5를 목표 매수 가격으로 설정한다.
-                # 주문 카운트 설정
-                coinOrderCount[coinString] = 0
-            # 평균 매수 가격 -30 보다 현재 매도 호가가 낮거나 같을 때
-            if coinAveragePrice[coinString] - 30 >= coinAskPrice[coinString]:
-                # 현재 매도 호가로 매수 ====================================================================================================================
-                upbit.buy_market_order("KRW-" + coin, seed_1Base * 2 *0.9995) # 수수료 금액을 제외한 금액 만큼 매수한다.
-                # 평균 매수 가격 설정
-                coinAveragePrice[coinString] = coinAveragePrice[coinString] - 5
-                # 물타기 횟수
-                coinScaleTradingCount[coinString] = 5
-                #슬랙 메시지
-                post_message(myToken,"#coin", "KRW-" + coin + ", 평균 매수 가격 :" + str(coinAveragePrice[coinString]) + " +5 일때 판매(매도호가), 물타기 횟수 :" + str(coinScaleTradingCount[coinString]) + ", 매수 평균가 :" + str(get_balance(coin)))
-        # 물타기 횟수가 5일 때
-        if coinScaleTradingCount[coinString] == 5:
-            # 평균 매수 가격 +5 보다 현재 매수 호가가 높거나 같을 때
-            if coinAveragePrice[coinString] + 5 <= coinBidPrice[coinString]:
-                # 현재 매수 호가로 매도 ====================================================================================================================
-                upbit.sell_market_order("KRW-" + coin, upbit.get_balance("KRW-" + coin)) # 현재 보유 개수만큼 매도 한다.
-                # 목표 매수 가격 설정
-                coinTargetBidPrice[coinString] = coinBidPrice[coinString] - 5 # 매수 호가 -5를 목표 매수 가격으로 설정한다.
-                # 주문 카운트 설정
-                coinOrderCount[coinString] = 0
-            # 평균 매수 가격 -35 보다 현재 매도 호가가 낮거나 같을 때 손절한다!!
-            if coinAveragePrice[coinString] - 35 >= coinAskPrice[coinString]:
-                #슬랙 메시지
-                post_message(myToken,"#coin", "KRW-" + coin + ", 손절 매도가 : " + str(coinAskPrice[coinString]) + ", 매수 평균가 :" + str(get_balance(coin)))
-                # 현재 매수 호가로 매도 ====================================================================================================================
-                upbit.sell_market_order("KRW-" + coin, upbit.get_balance("KRW-" + coin)) # 현재 보유 개수만큼 매도 한다.
-                # 목표 매수 가격 설정
-                coinTargetBidPrice[coinString] = 0 # 손절시에는 목표 매수 가격을 설정하지 않는다.
-                # 주문 카운트 설정
-                coinOrderCount[coinString] = 0
-                # 쿨 다운 시간 설정
-                coinCooldown[coinString] = datetime.datetime.now()
+                coinOrderBidPrice[coinString][searchCount + 1] = coinAskPrice[coinString] # 주문 매수 가격
+                coinOrderBidVolume[coinString][searchCount + 1] = (seed_1Base *0.9995) / coinAskPrice[coinString] # 주문 매수 수량
+                coinOrderCount[coinString] = coinOrderCount[coinString] + 1
+            # 매수 가격 -30보다 현재 매수 호가가 더 낮거나 같은지 비교한다.
+            elif coinOrderBidPrice[coinString][searchCount] - 30 <= coinBidPrice[coinString]:
+                # 손절 쿨타임 설정 60초 후에도 해당 가격이면, 손절한다.
+                if type(coinCooldown[coinString]) != int:
+                    if coinCooldown[coinString] + datetime.timedelta(seconds=60) <= datetime.datetime.now():
+                        #슬랙 메시지
+                        post_message(myToken,"#coin", "KRW-" + coin + ", 손절 매도가 : " + str(coinAskPrice[coinString]) + ", 매수 평균가 :" + str(get_balance(coin)))
+                        coinCooldown[coinString] = 0
+                        # 매도 호가가 100원 초과 일 때
+                        if coinAskPrice[coinString] > 100:
+                            # 현재 매수 호가로 매도 ====================================================================================================================
+                            upbit.sell_market_order("KRW-" + coin, coinOrderBidVolume[coinString][searchCount]) # 주문 매수 수량만큼 판매한다.
+                            # 바로 현재 매도 호가로 매수 ================================================================================================================
+                            upbit.buy_market_order("KRW-" + coin, seed_1Base *0.9995) # 수수료 금액을 제외한 금액 만큼 매수한다.
+                            coinOrderBidPrice[coinString][searchCount + 1] = coinAskPrice[coinString] # 주문 매수 가격
+                            coinOrderBidVolume[coinString][searchCount + 1] = (seed_1Base *0.9995) / coinAskPrice[coinString] # 주문 매수 수량
+                        # 매도 호가가 100원 이하이면, 전량 매도
+                        else:
+                            coinOrderCount[coinString] = 0
+                            upbit.sell_market_order("KRW-" + coin, upbit.get_balance("KRW-" + coin)) # 현재 보유 개수만큼 매도 한다.
+                else:
+                    coinCooldown[coinString] = datetime.datetime.now()
+                    #슬랙 메시지
+                    post_message(myToken,"#coin", coin + "60초 후 손절합니다.")
 
 # 로그인
 upbit = pyupbit.Upbit(access, secret)
 # 시작 메세지 슬랙 전송
 post_message(myToken,"#coin", "스캘핑 트레이드 시작")
 
-seed = 500000 # 5개를 돌리므로, X5 만큼 원화가 있어야함
-seed_1Base = seed * 0.1 # 시드를 10개로 나눈다.
+seed = 500000 # 5개를 돌리므로, X6 만큼 원화가 있어야함
+seed_1Base = seed * 0.05 # 시드를 20개로 나눈다.
+OrderMaxCount = 20 #최대 주문 수량을 설정한다.
 
 coin1 = "BORA" #보라
-coin2 = "PUNDIX" #펀디엑스
-coin3 = "MANA" #디센트럴랜드
+coin2 = "ADA" #에이다
+coin3 = "ONG" #온톨로지가스
 coin4 = "PLA" #플레이댑
 coin5 = "XRP" #리플
+coin6 = "DOGE" #도지코인
 
+# 매수 호가
+coinBidPrice = {'coin1': 0, 'coin2': 0, 'coin3': 0, 'coin4': 0, 'coin5': 0, 'coin6': 0, 'coin7': 0, 'coin8': 0, 'coin9': 0, 'coin10': 0}
+# 매도 호가
+coinAskPrice = {'coin1': 0, 'coin2': 0, 'coin3': 0, 'coin4': 0, 'coin5': 0, 'coin6': 0, 'coin7': 0, 'coin8': 0, 'coin9': 0, 'coin10': 0}
 # 주문 카운트
-coinOrderCount = {'coin1': 0, 'coin2': 0, 'coin3': 0, 'coin4': 0, 'coin5': 0}
-# 목표 매수 가격
-coinTargetBidPrice = {'coin1': 0, 'coin2': 0, 'coin3': 0, 'coin4': 0, 'coin5': 0}
-# 매수 가격
-coinBidPrice = {'coin1': 0, 'coin2': 0, 'coin3': 0, 'coin4': 0, 'coin5': 0}
-# 매도 가격
-coinAskPrice = {'coin1': 0, 'coin2': 0, 'coin3': 0, 'coin4': 0, 'coin5': 0}
-# 평균 매수 가격
-coinAveragePrice = {'coin1': 0, 'coin2': 0, 'coin3': 0, 'coin4': 0, 'coin5': 0}
-# 물타기 횟수
-coinScaleTradingCount = {'coin1': 0, 'coin2': 0, 'coin3': 0, 'coin4': 0, 'coin5': 0}
-# 손절 후 쿨타임
-coinCooldown =  {'coin1': 0, 'coin2': 0, 'coin3': 0, 'coin4': 0, 'coin5': 0}
+coinOrderCount = {'coin1': 0, 'coin2': 0, 'coin3': 0, 'coin4': 0, 'coin5': 0, 'coin6': 0, 'coin7': 0, 'coin8': 0, 'coin9': 0, 'coin10': 0}
+# 주문 매수 가격
+coinOrderBidPrice = {'coin1': {}, 'coin2': {},'coin3': {}, 'coin4': {}, 'coin5': {}, 'coin6': {}, 'coin7': {}, 'coin8': {}, 'coin9': {}, 'coin10': {}}
+# 주문 매수 수량
+coinOrderBidVolume = {'coin1': {}, 'coin2': {},'coin3': {}, 'coin4': {}, 'coin5': {}, 'coin6': {}, 'coin7': {}, 'coin8': {}, 'coin9': {}, 'coin10': {}}
+# 손절 쿨타임
+coinCooldown =  {'coin1': 0, 'coin2': 0, 'coin3': 0, 'coin4': 0, 'coin5': 0, 'coin6': 0, 'coin7': 0, 'coin8': 0, 'coin9': 0, 'coin10': 0}
 
 while True:
     try:
@@ -234,6 +170,7 @@ while True:
         scalping_trade('coin3', coin3)
         scalping_trade('coin4', coin4)
         scalping_trade('coin5', coin5)
+        scalping_trade('coin6', coin6)
         time.sleep(1)
     except Exception as e:
         print(e)
