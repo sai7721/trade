@@ -125,8 +125,8 @@ def scalping_trade(coinString, coin):
                 coinTargetBidPrice[coinString] = coinBidPrice[coinString] - 5 # 매수 호가 -5를 목표 매수 가격으로 설정한다.
                 # 주문 카운트 설정
                 coinOrderCount[coinString] = 0
-            # 평균 매수 가격 -15 보다 현재 매도 호가가 낮거나 같을 때
-            if coinAveragePrice[coinString] - 15 >= coinAskPrice[coinString]:
+            # 평균 매수 가격 -20 보다 현재 매도 호가가 낮거나 같을 때
+            if coinAveragePrice[coinString] - 20 >= coinAskPrice[coinString]:
                 # 현재 매도 호가로 매수 ====================================================================================================================
                 upbit.buy_market_order("KRW-" + coin, seed_1Base * 2 *0.9995) # 수수료 금액을 제외한 금액 만큼 매수한다.
                 # 평균 매수 가격 설정
@@ -145,8 +145,8 @@ def scalping_trade(coinString, coin):
                 coinTargetBidPrice[coinString] = coinBidPrice[coinString] - 5 # 매수 호가 -5를 목표 매수 가격으로 설정한다.
                 # 주문 카운트 설정
                 coinOrderCount[coinString] = 0
-            # 평균 매수 가격 -15 보다 현재 매도 호가가 낮거나 같을 때
-            if coinAveragePrice[coinString] - 15 >= coinAskPrice[coinString]:
+            # 평균 매수 가격 -25 보다 현재 매도 호가가 낮거나 같을 때
+            if coinAveragePrice[coinString] - 25 >= coinAskPrice[coinString]:
                 # 현재 매도 호가로 매수 ====================================================================================================================
                 upbit.buy_market_order("KRW-" + coin, seed_1Base * 2 *0.9995) # 수수료 금액을 제외한 금액 만큼 매수한다.
                 # 평균 매수 가격 설정
@@ -165,8 +165,8 @@ def scalping_trade(coinString, coin):
                 coinTargetBidPrice[coinString] = coinBidPrice[coinString] - 5 # 매수 호가 -5를 목표 매수 가격으로 설정한다.
                 # 주문 카운트 설정
                 coinOrderCount[coinString] = 0
-            # 평균 매수 가격 -15 보다 현재 매도 호가가 낮거나 같을 때
-            if coinAveragePrice[coinString] - 15 >= coinAskPrice[coinString]:
+            # 평균 매수 가격 -30 보다 현재 매도 호가가 낮거나 같을 때
+            if coinAveragePrice[coinString] - 30 >= coinAskPrice[coinString]:
                 # 현재 매도 호가로 매수 ====================================================================================================================
                 upbit.buy_market_order("KRW-" + coin, seed_1Base * 2 *0.9995) # 수수료 금액을 제외한 금액 만큼 매수한다.
                 # 평균 매수 가격 설정
@@ -185,8 +185,8 @@ def scalping_trade(coinString, coin):
                 coinTargetBidPrice[coinString] = coinBidPrice[coinString] - 5 # 매수 호가 -5를 목표 매수 가격으로 설정한다.
                 # 주문 카운트 설정
                 coinOrderCount[coinString] = 0
-            # 평균 매수 가격 -15 보다 현재 매도 호가가 낮거나 같을 때 손절한다!!
-            if coinAveragePrice[coinString] - 15 >= coinAskPrice[coinString]:
+            # 평균 매수 가격 -35 보다 현재 매도 호가가 낮거나 같을 때 손절한다!!
+            if coinAveragePrice[coinString] - 35 >= coinAskPrice[coinString]:
                 #슬랙 메시지
                 post_message(myToken,"#coin", "KRW-" + coin + ", 손절 매도가 : " + str(coinAskPrice[coinString]) + ", 매수 평균가 :" + str(get_balance(coin)))
                 # 현재 매수 호가로 매도 ====================================================================================================================
