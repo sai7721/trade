@@ -98,6 +98,8 @@ def scalping_trade(coinString, coin):
             searchCount = count - i # 확인할 숫자(큰 수부터 확인한다.)
             # 원하는 판매 가격과 매수 호가를 비교한다.
             if coinOrderBidPrice[coinString][searchCount] + 1 <= coinBidPrice[coinString]:
+                #슬랙 메시지
+                post_message(myToken,"#coin", "KRW-" + coin + ", 원하는 매도가 : " + str(coinOrderBidPrice[coinString][searchCount] + 1) + ", 실제 매도가 :" + str(coinBidPrice[coinString]))
                 # 현재 매수 호가로 매도 ====================================================================================================================
                 upbit.sell_market_order("KRW-" + coin, coinOrderBidVolume[coinString][searchCount]) # 주문 매수 수량만큼 판매한다.
                 coinOrderCount[coinString] = coinOrderCount[coinString] - 1 # 판매했으므로, 주문 카운트를 하나 차감한다.
@@ -165,11 +167,11 @@ coinCooldown =  {'coin1': 0, 'coin2': 0, 'coin3': 0, 'coin4': 0, 'coin5': 0, 'co
 
 while True:
     try:
-        scalping_trade('coin1', coin1)
-        scalping_trade('coin2', coin2)
-        scalping_trade('coin3', coin3)
-        scalping_trade('coin4', coin4)
-        scalping_trade('coin5', coin5)
+        # scalping_trade('coin1', coin1)
+        # scalping_trade('coin2', coin2)
+        # scalping_trade('coin3', coin3)
+        # scalping_trade('coin4', coin4)
+        # scalping_trade('coin5', coin5)
         scalping_trade('coin6', coin6)
         time.sleep(1)
     except Exception as e:
