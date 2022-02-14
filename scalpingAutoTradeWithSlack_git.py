@@ -59,7 +59,7 @@ def scalping_trade(coinString, coin):
                 coinOrderBidVolume[coinString][searchCount + 1] = (seed_1Base *0.9995) / coinAskPrice[coinString] # 주문 매수 수량
                 coinOrderCount[coinString] = coinOrderCount[coinString] + 1
             # 매수 가격 -150보다 현재 매수 호가가 더 낮거나 같은지 비교한다.
-            elif coinOrderBidPrice[coinString][searchCount] - 150 <= coinBidPrice[coinString]:
+            elif coinOrderBidPrice[coinString][searchCount] - 150 >= coinBidPrice[coinString]:
                 # 손절 쿨타임 설정 60초 후에도 해당 가격이면, 손절한다.
                 if type(coinCooldown[coinString]) != int:
                     if coinCooldown[coinString] + datetime.timedelta(seconds=60) <= datetime.datetime.now():
@@ -98,8 +98,8 @@ def scalping_trade(coinString, coin):
             searchCount = count - i # 확인할 숫자(큰 수부터 확인한다.)
             # 원하는 판매 가격과 매수 호가를 비교한다.
             if coinOrderBidPrice[coinString][searchCount] + 1 <= coinBidPrice[coinString]:
-                #슬랙 메시지
-                post_message(myToken,"#coin", "KRW-" + coin + ", 원하는 매도가 : " + str(coinOrderBidPrice[coinString][searchCount] + 1) + ", 실제 매도가 :" + str(coinBidPrice[coinString]))
+                # #슬랙 메시지
+                # post_message(myToken,"#coin", "KRW-" + coin + ", 원하는 매도가 : " + str(coinOrderBidPrice[coinString][searchCount] + 1) + ", 실제 매도가 :" + str(coinBidPrice[coinString]))
                 # 현재 매수 호가로 매도 ====================================================================================================================
                 upbit.sell_market_order("KRW-" + coin, coinOrderBidVolume[coinString][searchCount]) # 주문 매수 수량만큼 판매한다.
                 coinOrderCount[coinString] = coinOrderCount[coinString] - 1 # 판매했으므로, 주문 카운트를 하나 차감한다.
@@ -112,7 +112,7 @@ def scalping_trade(coinString, coin):
                 coinOrderBidVolume[coinString][searchCount + 1] = (seed_1Base *0.9995) / coinAskPrice[coinString] # 주문 매수 수량
                 coinOrderCount[coinString] = coinOrderCount[coinString] + 1
             # 매수 가격 -30보다 현재 매수 호가가 더 낮거나 같은지 비교한다.
-            elif coinOrderBidPrice[coinString][searchCount] - 30 <= coinBidPrice[coinString]:
+            elif coinOrderBidPrice[coinString][searchCount] - 30 >= coinBidPrice[coinString]:
                 # 손절 쿨타임 설정 60초 후에도 해당 가격이면, 손절한다.
                 if type(coinCooldown[coinString]) != int:
                     if coinCooldown[coinString] + datetime.timedelta(seconds=60) <= datetime.datetime.now():
