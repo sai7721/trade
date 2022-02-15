@@ -64,7 +64,7 @@ def scalping_trade(coinString, coin):
                 if type(coinCooldown[coinString]) != int:
                     if coinCooldown[coinString] + datetime.timedelta(seconds=60) <= datetime.datetime.now():
                         #슬랙 메시지
-                        post_message(myToken,"#coin", "KRW-" + coin + ", 손절 매도가 : " + str(coinAskPrice[coinString]) + ", 매수 평균가 :" + str(get_balance(coin)))
+                        # post_message(myToken,"#coin", "KRW-" + coin + ", 손절 매도가 : " + str(coinAskPrice[coinString]) + ", 매수 평균가 :" + str(get_balance(coin)))
                         coinCooldown[coinString] = 0
                         # 매도 호가가 1,000원 초과 일 때
                         if coinAskPrice[coinString] > 1000:
@@ -94,18 +94,25 @@ def scalping_trade(coinString, coin):
     if coinOrderCount[coinString] > 0:
         # 주문 개수만큼 for문을 돌린다.
         count = coinOrderCount[coinString]
+        #슬랙 메시지
+        post_message(myToken,"#coin", "for문 시작전")
+        # time.sleep(0.5)
         for i in range(count): # 0 부터 시작
+            #슬랙 메시지
+            post_message(myToken,"#coin", "for문 시작" + str(i))
             searchCount = count - i # 확인할 숫자(큰 수부터 확인한다.)
             # 원하는 판매 가격과 매수 호가를 비교한다.
             if coinOrderBidPrice[coinString][searchCount] + 1 <= coinBidPrice[coinString]:
                 # #슬랙 메시지
-                # post_message(myToken,"#coin", "KRW-" + coin + ", 원하는 매도가 : " + str(coinOrderBidPrice[coinString][searchCount] + 1) + ", 실제 매도가 :" + str(coinBidPrice[coinString]))
+                post_message(myToken,"#coin", "매도하는 곳으로 들어옴 searchCount:" + str(searchCount))
                 # 현재 매수 호가로 매도 ====================================================================================================================
                 upbit.sell_market_order("KRW-" + coin, coinOrderBidVolume[coinString][searchCount]) # 주문 매수 수량만큼 판매한다.
                 coinOrderCount[coinString] = coinOrderCount[coinString] - 1 # 판매했으므로, 주문 카운트를 하나 차감한다.
                 coinCooldown[coinString] = 0
             # 현재 주문 수량이 최대 주문 수량보다 적고, 매수 가격 -1보다 현재 매도호가 가격이 더 낮거나 같은지 비교한다.
             elif coinOrderCount[coinString] < OrderMaxCount and coinOrderBidPrice[coinString][searchCount] -1 >= coinAskPrice[coinString]:
+                # #슬랙 메시지
+                post_message(myToken,"#coin", "추가 매수하는 곳으로 들어옴 searchCount:" + str(searchCount))
                 # 현재 매도 호가로 매수 ====================================================================================================================
                 upbit.buy_market_order("KRW-" + coin, seed_1Base *0.9995) # 수수료 금액을 제외한 금액 만큼 매수한다.
                 coinOrderBidPrice[coinString][searchCount + 1] = coinAskPrice[coinString] # 주문 매수 가격
@@ -113,6 +120,8 @@ def scalping_trade(coinString, coin):
                 coinOrderCount[coinString] = coinOrderCount[coinString] + 1
             # 매수 가격 -30보다 현재 매수 호가가 더 낮거나 같은지 비교한다.
             elif coinOrderBidPrice[coinString][searchCount] - 30 >= coinBidPrice[coinString]:
+                #슬랙 메시지
+                post_message(myToken,"#coin", "손절 라인으로 들어옴 searchCount:" + str(searchCount))
                 # 손절 쿨타임 설정 60초 후에도 해당 가격이면, 손절한다.
                 if type(coinCooldown[coinString]) != int:
                     if coinCooldown[coinString] + datetime.timedelta(seconds=60) <= datetime.datetime.now():
@@ -167,11 +176,11 @@ coinCooldown =  {'coin1': 0, 'coin2': 0, 'coin3': 0, 'coin4': 0, 'coin5': 0, 'co
 
 while True:
     try:
-        scalping_trade('coin1', coin1)
-        scalping_trade('coin2', coin2)
-        scalping_trade('coin3', coin3)
-        scalping_trade('coin4', coin4)
-        scalping_trade('coin5', coin5)
+        # scalping_trade('coin1', coin1)
+        # scalping_trade('coin2', coin2)
+        # scalping_trade('coin3', coin3)
+        # scalping_trade('coin4', coin4)
+        # scalping_trade('coin5', coin5)
         scalping_trade('coin6', coin6)
         time.sleep(1)
     except Exception as e:
