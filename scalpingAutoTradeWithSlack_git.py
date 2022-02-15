@@ -2,6 +2,7 @@ import time
 import pyupbit
 import datetime
 import requests
+import math
 
 access = "SijZbF3zKypf6A9SBbEgg8XxuUgR8YxmxG0P0OtP"
 secret = "K6OKreFQ1GPGmzAx6p1VGdU4Ac2keR1eIlM9DPtd"
@@ -47,10 +48,14 @@ def scalping_trade(coinString, coin):
     
     # 아직 주문한게 없고, 매도 호가가 1,000원 초과 & 3000원 이하 일 때
     if coinOrderCount[coinString] == 0 and 3000 >= coinAskPrice[coinString] > 1000 and cooldown:
+        # 개수 내림 계산 (소수점이 너무 많으면 에러가 나는 듯)
+        volume = math.floor((seed_1Base *0.9995) / coinAskPrice[coinString]) # 매수 수량
+        price = coinAskPrice[coinString] * volume # 매수 가격
+        
         # 현재 매도 호가로 매수 ====================================================================================================================
-        upbit.buy_market_order("KRW-" + coin, seed_1Base *0.9995) # 수수료 금액을 제외한 금액 만큼 매수한다.
+        upbit.buy_market_order("KRW-" + coin, price) # 수수료 금액을 제외한 금액 만큼 매수한다.
         coinOrderBidPrice[coinString][1] = coinAskPrice[coinString] # 주문 매수 가격
-        coinOrderBidVolume[coinString][1] = (seed_1Base *0.9995) / coinAskPrice[coinString] # 주문 매수 수량
+        coinOrderBidVolume[coinString][1] = volume # 주문 매수 수량
         coinOrderCount[coinString] = 1
     # 주문한게 있고, 매도 호가가 1,000원 초과 & 3000원 이하 일 때
     if coinOrderCount[coinString] > 0 and 3000 >= coinAskPrice[coinString] > 1000 and cooldown:
@@ -91,16 +96,22 @@ def scalping_trade(coinString, coin):
                     # 바로 한단계 아래에 매수 정보가 있는지, 최대 주문 수량 이내인지 확인한다.
                     if searchCount + 1 in coinBuyLimitOrder[coinString] and coinOrderCount[coinString] < OrderMaxCount:
                         if "uuid" in coinBuyLimitOrder[coinString][searchCount + 1]:
+                            # 개수 내림 계산 (소수점이 너무 많으면 에러가 나는 듯)
+                            volume = math.floor((seed_1Base *0.9995) / (coinAskPrice[coinString] - 5)) # 매수 수량
+                            
                             # 매수 주문한다. 매수 주문 내용을 저장한다.
-                            coinBuyLimitOrder[coinString][searchCount + 1] = upbit.buy_limit_order("KRW-" + coin, coinOrderBidPrice[coinString][searchCount] - 5, (seed_1Base *0.9995) / (coinOrderBidPrice[coinString][searchCount] - 5))
+                            coinBuyLimitOrder[coinString][searchCount + 1] = upbit.buy_limit_order("KRW-" + coin, coinOrderBidPrice[coinString][searchCount] - 5, volume)
                             coinOrderBidPrice[coinString][searchCount + 1] = coinOrderBidPrice[coinString][searchCount] - 5 # 주문 매수 가격
-                            coinOrderBidVolume[coinString][searchCount + 1] = (seed_1Base *0.9995) / (coinOrderBidPrice[coinString][searchCount] - 5) # 주문 매수 수량
+                            coinOrderBidVolume[coinString][searchCount + 1] = volume # 주문 매수 수량
                             coinOrderCount[coinString] = coinOrderCount[coinString] + 1
                     else:
+                        # 개수 내림 계산 (소수점이 너무 많으면 에러가 나는 듯)
+                        volume = math.floor((seed_1Base *0.9995) / (coinAskPrice[coinString] - 5)) # 매수 수량
+                        
                         # 매수 주문한다. 매수 주문 내용을 저장한다.
-                        coinBuyLimitOrder[coinString][searchCount + 1] = upbit.buy_limit_order("KRW-" + coin, coinOrderBidPrice[coinString][searchCount] - 5, (seed_1Base *0.9995) / (coinOrderBidPrice[coinString][searchCount] - 5))
+                        coinBuyLimitOrder[coinString][searchCount + 1] = upbit.buy_limit_order("KRW-" + coin, coinOrderBidPrice[coinString][searchCount] - 5, volume)
                         coinOrderBidPrice[coinString][searchCount + 1] = coinOrderBidPrice[coinString][searchCount] - 5 # 주문 매수 가격
-                        coinOrderBidVolume[coinString][searchCount + 1] = (seed_1Base *0.9995) / (coinOrderBidPrice[coinString][searchCount] - 5) # 주문 매수 수량
+                        coinOrderBidVolume[coinString][searchCount + 1] = volume # 주문 매수 수량
                         coinOrderCount[coinString] = coinOrderCount[coinString] + 1
                 # 매도 정보가 있으면, 매도가 완료되었는지 확인한다.
                 elif sellLimitOrderState == "done":
@@ -115,10 +126,11 @@ def scalping_trade(coinString, coin):
                             upbit.cancel_order(coinBuyLimitOrder[coinString][j]["uuid"])
                     # 제일 상위 가격이 팔리지 않았을 때
                     else:
+                        
                         # 매도 완료 시, 매도 정보를 초기화 한다.
                         coinSellLimitOrder[coinString][searchCount] = {}
                         # 재매수 한다.
-                        coinBuyLimitOrder[coinString][searchCount] = upbit.buy_limit_order("KRW-" + coin, coinOrderBidPrice[coinString][searchCount], (seed_1Base *0.9995) / coinOrderBidPrice[coinString][searchCount])
+                        coinBuyLimitOrder[coinString][searchCount] = upbit.buy_limit_order("KRW-" + coin, coinOrderBidPrice[coinString][searchCount], coinOrderBidVolume[coinString][searchCount])
                 # 매도 주문 중이고, 첫 주문 건일 때, 매수 가격 -150보다 현재 매수 호가가 더 낮거나 같은지 비교한다.
                 elif sellLimitOrderState == "wait" and searchCount == 1 and coinOrderBidPrice[coinString][1] - 150 >= coinBidPrice[coinString]:
                     #슬랙 메시지
@@ -142,10 +154,13 @@ def scalping_trade(coinString, coin):
     
     # 아직 주문한게 없고, 매도 호가가 100원 초과 & 300원 이하 일 때
     if coinOrderCount[coinString] == 0 and 300 >= coinAskPrice[coinString] > 100 and cooldown:
+        # 개수 내림 계산 (소수점이 너무 많으면 에러가 나는 듯)
+        volume = math.floor((seed_1Base *0.9995) / coinAskPrice[coinString]) # 매수 수량
+        price = coinAskPrice[coinString] * volume # 매수 가격
         # 현재 매도 호가로 매수 ====================================================================================================================
-        upbit.buy_market_order("KRW-" + coin, seed_1Base *0.9995) # 수수료 금액을 제외한 금액 만큼 매수한다.
+        upbit.buy_market_order("KRW-" + coin, price) # 수수료 금액을 제외한 금액 만큼 매수한다.
         coinOrderBidPrice[coinString][1] = coinAskPrice[coinString] # 주문 매수 가격
-        coinOrderBidVolume[coinString][1] = (seed_1Base *0.9995) / coinAskPrice[coinString] # 주문 매수 수량
+        coinOrderBidVolume[coinString][1] = volume # 주문 매수 수량
         coinOrderCount[coinString] = 1
     # 주문한게 있고, 매도 호가가 100원 초과 & 300원 이하 일 때
     if coinOrderCount[coinString] > 0 and 300 >= coinAskPrice[coinString] > 100 and cooldown:
@@ -186,14 +201,20 @@ def scalping_trade(coinString, coin):
                     # 바로 한단계 아래에 매수 정보가 있는지, 최대 주문 수량 이내인지 확인한다.
                     if searchCount + 1 in coinBuyLimitOrder[coinString] and coinOrderCount[coinString] < OrderMaxCount:
                         if "uuid" in coinBuyLimitOrder[coinString][searchCount + 1]:
+                            # 개수 내림 계산 (소수점이 너무 많으면 에러가 나는 듯)
+                            volume = math.floor((seed_1Base *0.9995) / (coinAskPrice[coinString] - 1)) # 매수 수량
+                            
                             # 매수 주문한다. 매수 주문 내용을 저장한다.
-                            coinBuyLimitOrder[coinString][searchCount + 1] = upbit.buy_limit_order("KRW-" + coin, coinOrderBidPrice[coinString][searchCount] - 1, (seed_1Base *0.9995) / (coinOrderBidPrice[coinString][searchCount] - 1))
+                            coinBuyLimitOrder[coinString][searchCount + 1] = upbit.buy_limit_order("KRW-" + coin, coinOrderBidPrice[coinString][searchCount] - 1, volume)
                             coinOrderBidPrice[coinString][searchCount + 1] = coinOrderBidPrice[coinString][searchCount] - 1 # 주문 매수 가격
                             coinOrderBidVolume[coinString][searchCount + 1] = (seed_1Base *0.9995) / (coinOrderBidPrice[coinString][searchCount] - 1) # 주문 매수 수량
                             coinOrderCount[coinString] = coinOrderCount[coinString] + 1
                     else:
+                        # 개수 내림 계산 (소수점이 너무 많으면 에러가 나는 듯)
+                        volume = math.floor((seed_1Base *0.9995) / (coinAskPrice[coinString] - 1)) # 매수 수량
+                        
                         # 매수 주문한다. 매수 주문 내용을 저장한다.
-                        coinBuyLimitOrder[coinString][searchCount + 1] = upbit.buy_limit_order("KRW-" + coin, coinOrderBidPrice[coinString][searchCount] - 1, (seed_1Base *0.9995) / (coinOrderBidPrice[coinString][searchCount] - 1))
+                        coinBuyLimitOrder[coinString][searchCount + 1] = upbit.buy_limit_order("KRW-" + coin, coinOrderBidPrice[coinString][searchCount] - 1, volume)
                         coinOrderBidPrice[coinString][searchCount + 1] = coinOrderBidPrice[coinString][searchCount] - 1 # 주문 매수 가격
                         coinOrderBidVolume[coinString][searchCount + 1] = (seed_1Base *0.9995) / (coinOrderBidPrice[coinString][searchCount] - 1) # 주문 매수 수량
                         coinOrderCount[coinString] = coinOrderCount[coinString] + 1
@@ -213,7 +234,7 @@ def scalping_trade(coinString, coin):
                         # 매도 완료 시, 매도 정보를 초기화 한다.
                         coinSellLimitOrder[coinString][searchCount] = {}
                         # 재매수 한다.
-                        coinBuyLimitOrder[coinString][searchCount] = upbit.buy_limit_order("KRW-" + coin, coinOrderBidPrice[coinString][searchCount], (seed_1Base *0.9995) / coinOrderBidPrice[coinString][searchCount])
+                        coinBuyLimitOrder[coinString][searchCount] = upbit.buy_limit_order("KRW-" + coin, coinOrderBidPrice[coinString][searchCount], coinOrderBidVolume[coinString][searchCount])
                 # 매도 주문 중이고, 첫 주문 건일 때, 매수 가격 -30보다 현재 매수 호가가 더 낮거나 같은지 비교한다.
                 elif sellLimitOrderState == "wait" and searchCount == 1 and coinOrderBidPrice[coinString][1] - 30 >= coinBidPrice[coinString]:
                     #슬랙 메시지
@@ -277,6 +298,5 @@ while True:
         scalping_trade('coin6', coin6)
         time.sleep(1)
     except Exception as e:
-        print(e)
         post_message(myToken,"#coin", e)
         time.sleep(1)
