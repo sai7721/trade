@@ -67,12 +67,8 @@ def scalping_trade(coinString, coin):
             if searchCount in coinBuyLimitOrder[coinString]:
                 # 매수 정보 확인
                 if "uuid" in coinBuyLimitOrder[coinString][searchCount]:
-                    #슬랙 메시지
-                    post_message(myToken,"#coin", "매수 정보 확인" + str(searchCount))
                     buyLimitOrderState = upbit.get_order(coinBuyLimitOrder[coinString][searchCount]["uuid"])["state"]
                 else:
-                    # 매수 정보가 없다는 건, 최초 1번 주문밖에 없음.
-                    post_message(myToken,"#coin", "매수 정보 없음" + str(searchCount))
                     buyLimitOrderState = "done" # 1번은 매도 호가로 바로 매수하기 때문에 정보가 없다. (바로 완료됨)            
             else:
                 coinBuyLimitOrder[coinString][searchCount] = {}
@@ -80,20 +76,15 @@ def scalping_trade(coinString, coin):
             if searchCount in coinSellLimitOrder[coinString]:
                 # 매도 정보 확인
                 if "uuid" in coinSellLimitOrder[coinString][searchCount]:
-                    #슬랙 메시지
-                    post_message(myToken,"#coin", "매도 정보 확인" + str(searchCount))
                     # 매도 정보가 있으면 매도주문 정보를 가져온다.
                     sellLimitOrderState = upbit.get_order(coinSellLimitOrder[coinString][searchCount]["uuid"])["state"]
                 else:
-                    post_message(myToken,"#coin", "매도 정보 없음" + str(searchCount))
                     sellLimitOrderState = "None" # 매도 정보가 없으면 "None" 처리
             else:
                 coinSellLimitOrder[coinString][searchCount] = {}
                 
             # 매수가 되었는지 먼저 확인한다.
             if buyLimitOrderState == "done":
-                #슬랙 메시지
-                post_message(myToken,"#coin", "매수 완료" + str(searchCount))
                 # 매수가 완료 되었으면, 매도 정보가 있는지 확인한다.
                 if sellLimitOrderState == "None": # 매도 정보가 없으면
                     #슬랙 메시지
@@ -102,7 +93,16 @@ def scalping_trade(coinString, coin):
                     coinSellLimitOrder[coinString][searchCount] = upbit.sell_limit_order("KRW-" + coin, coinOrderBidPrice[coinString][searchCount] + 5, coinOrderBidVolume[coinString][searchCount])
                     # 매도 주문 시, 바로 한단계 아래로 매수주문이 없으면, 매수 주문한다.
                     # 바로 한단계 아래에 매수 정보가 있는지, 최대 주문 수량 이내인지 확인한다.
-                    if "uuid" in coinBuyLimitOrder[coinString][searchCount + 1] and coinOrderCount[coinString] < OrderMaxCount:
+                    if searchCount + 1 in coinBuyLimitOrder[coinString] and coinOrderCount[coinString] < OrderMaxCount:
+                        if "uuid" in coinBuyLimitOrder[coinString][searchCount + 1]:
+                            #슬랙 메시지
+                            post_message(myToken,"#coin", "한단계 아래에 매수 정보가 없어서 매수 설정" + str(searchCount))
+                            # 매수 주문한다. 매수 주문 내용을 저장한다.
+                            coinBuyLimitOrder[coinString][searchCount + 1] = upbit.buy_limit_order("KRW-" + coin, coinOrderBidPrice[coinString][searchCount] - 5, (seed_1Base *0.9995) / (coinOrderBidPrice[coinString][searchCount] - 5))
+                            coinOrderBidPrice[coinString][searchCount + 1] = coinOrderBidPrice[coinString][searchCount] - 5 # 주문 매수 가격
+                            coinOrderBidVolume[coinString][searchCount + 1] = (seed_1Base *0.9995) / (coinOrderBidPrice[coinString][searchCount] - 5) # 주문 매수 수량
+                            coinOrderCount[coinString] = coinOrderCount[coinString] + 1
+                    else:
                         #슬랙 메시지
                         post_message(myToken,"#coin", "한단계 아래에 매수 정보가 없어서 매수 설정" + str(searchCount))
                         # 매수 주문한다. 매수 주문 내용을 저장한다.
