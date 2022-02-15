@@ -195,7 +195,7 @@ def scalping_trade(coinString, coin):
             if buyLimitOrderState == "done":
                 # 매수가 완료 되었으면, 매도 정보가 있는지 확인한다.
                 if sellLimitOrderState == "None": # 매도 정보가 없으면
-                    # 주문 매수 가격 + 5 가격으로 매도 주문한다.
+                    # 주문 매수 가격 + 1 가격으로 매도 주문한다.
                     coinSellLimitOrder[coinString][searchCount] = upbit.sell_limit_order("KRW-" + coin, coinOrderBidPrice[coinString][searchCount] + 1, coinOrderBidVolume[coinString][searchCount])
                     # 매도 주문 시, 바로 한단계 아래로 매수주문이 없으면, 매수 주문한다.
                     # 바로 한단계 아래에 매수 정보가 있는지, 최대 주문 수량 이내인지 확인한다.
@@ -207,7 +207,7 @@ def scalping_trade(coinString, coin):
                             # 매수 주문한다. 매수 주문 내용을 저장한다.
                             coinBuyLimitOrder[coinString][searchCount + 1] = upbit.buy_limit_order("KRW-" + coin, coinOrderBidPrice[coinString][searchCount] - 1, volume)
                             coinOrderBidPrice[coinString][searchCount + 1] = coinOrderBidPrice[coinString][searchCount] - 1 # 주문 매수 가격
-                            coinOrderBidVolume[coinString][searchCount + 1] = (seed_1Base *0.9995) / (coinOrderBidPrice[coinString][searchCount] - 1) # 주문 매수 수량
+                            coinOrderBidVolume[coinString][searchCount + 1] = volume # 주문 매수 수량
                             coinOrderCount[coinString] = coinOrderCount[coinString] + 1
                     else:
                         # 개수 내림 계산 (소수점이 너무 많으면 에러가 나는 듯)
@@ -216,7 +216,7 @@ def scalping_trade(coinString, coin):
                         # 매수 주문한다. 매수 주문 내용을 저장한다.
                         coinBuyLimitOrder[coinString][searchCount + 1] = upbit.buy_limit_order("KRW-" + coin, coinOrderBidPrice[coinString][searchCount] - 1, volume)
                         coinOrderBidPrice[coinString][searchCount + 1] = coinOrderBidPrice[coinString][searchCount] - 1 # 주문 매수 가격
-                        coinOrderBidVolume[coinString][searchCount + 1] = (seed_1Base *0.9995) / (coinOrderBidPrice[coinString][searchCount] - 1) # 주문 매수 수량
+                        coinOrderBidVolume[coinString][searchCount + 1] = volume # 주문 매수 수량
                         coinOrderCount[coinString] = coinOrderCount[coinString] + 1
                 # 매도 정보가 있으면, 매도가 완료되었는지 확인한다.
                 elif sellLimitOrderState == "done":
