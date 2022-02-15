@@ -95,7 +95,8 @@ def scalping_trade(coinString, coin):
                     # 매도 주문 시, 바로 한단계 아래로 매수주문이 없으면, 매수 주문한다.
                     # 바로 한단계 아래에 매수 정보가 있는지, 최대 주문 수량 이내인지 확인한다.
                     if searchCount + 1 in coinBuyLimitOrder[coinString] and coinOrderCount[coinString] < OrderMaxCount:
-                        if "uuid" in coinBuyLimitOrder[coinString][searchCount + 1]:
+                        # "uuid"가 있으면 매수한 내역이 있는 것이므로, 매수 주문을 하지 않는다. "uuid"가 없는지 확인한다.
+                        if "uuid" not in coinBuyLimitOrder[coinString][searchCount + 1]:
                             # 개수 내림 계산 (소수점이 너무 많으면 에러가 나는 듯)
                             volume = math.floor((seed_1Base *0.9995) / (coinAskPrice[coinString] - 5)) # 매수 수량
                             
@@ -124,9 +125,10 @@ def scalping_trade(coinString, coin):
                         for j in range(2, count + 1): # 2 ~ count 까지
                             # 매수 주문을 취소한다. (매도 주문은 있을 수가 없음 제일 상위 가격이 팔렸으니..)
                             upbit.cancel_order(coinBuyLimitOrder[coinString][j]["uuid"])
+                            # 매수 주문 내용 초기화
+                            coinBuyLimitOrder[coinString][j] = {}
                     # 제일 상위 가격이 팔리지 않았을 때
                     else:
-                        
                         # 매도 완료 시, 매도 정보를 초기화 한다.
                         coinSellLimitOrder[coinString][searchCount] = {}
                         # 재매수 한다.
@@ -200,7 +202,8 @@ def scalping_trade(coinString, coin):
                     # 매도 주문 시, 바로 한단계 아래로 매수주문이 없으면, 매수 주문한다.
                     # 바로 한단계 아래에 매수 정보가 있는지, 최대 주문 수량 이내인지 확인한다.
                     if searchCount + 1 in coinBuyLimitOrder[coinString] and coinOrderCount[coinString] < OrderMaxCount:
-                        if "uuid" in coinBuyLimitOrder[coinString][searchCount + 1]:
+                        # "uuid"가 있으면 매수한 내역이 있는 것이므로, 매수 주문을 하지 않는다. "uuid"가 없는지 확인한다.
+                        if "uuid" not in coinBuyLimitOrder[coinString][searchCount + 1]:
                             # 개수 내림 계산 (소수점이 너무 많으면 에러가 나는 듯)
                             volume = math.floor((seed_1Base *0.9995) / (coinAskPrice[coinString] - 1)) # 매수 수량
                             
@@ -229,6 +232,8 @@ def scalping_trade(coinString, coin):
                         for j in range(2, count + 1): # 2 ~ count 까지
                             # 매수 주문을 취소한다. (매도 주문은 있을 수가 없음 제일 상위 가격이 팔렸으니..)
                             upbit.cancel_order(coinBuyLimitOrder[coinString][j]["uuid"])
+                            # 매수 주문 내용 초기화
+                            coinBuyLimitOrder[coinString][j] = {}
                     # 제일 상위 가격이 팔리지 않았을 때
                     else:
                         # 매도 완료 시, 매도 정보를 초기화 한다.
