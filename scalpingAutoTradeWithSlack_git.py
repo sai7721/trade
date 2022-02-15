@@ -63,19 +63,32 @@ def scalping_trade(coinString, coin):
             
             buyLimitOrderState = ""
             sellLimitOrderState = ""
-            # 매수 정보 확인
-            if "uuid" in coinBuyLimitOrder[coinString][searchCount]:
-                buyLimitOrderState = upbit.get_order(coinBuyLimitOrder[coinString][searchCount]["uuid"])["state"]
-            else:
-                # 매수 정보가 없다는 건, 최초 1번 주문밖에 없음.
-                buyLimitOrderState = "done" # 1번은 매도 호가로 바로 매수하기 때문에 정보가 없다. (바로 완료됨)
             
-            # 매도 정보 확인
-            if "uuid" in coinSellLimitOrder[coinString][searchCount]:
-                # 매도 정보가 있으면 매도주문 정보를 가져온다.
-                sellLimitOrderState = upbit.get_order(coinSellLimitOrder[coinString][searchCount]["uuid"])["state"]
+            if searchCount in coinBuyLimitOrder[coinString]:
+                # 매수 정보 확인
+                if "uuid" in coinBuyLimitOrder[coinString][searchCount]:
+                    #슬랙 메시지
+                    post_message(myToken,"#coin", "매수 정보 확인" + str(searchCount))
+                    buyLimitOrderState = upbit.get_order(coinBuyLimitOrder[coinString][searchCount]["uuid"])["state"]
+                else:
+                    # 매수 정보가 없다는 건, 최초 1번 주문밖에 없음.
+                    post_message(myToken,"#coin", "매수 정보 없음" + str(searchCount))
+                    buyLimitOrderState = "done" # 1번은 매도 호가로 바로 매수하기 때문에 정보가 없다. (바로 완료됨)            
+            else
+                coinBuyLimitOrder[coinString][searchCount] = {}
+            
+            if searchCount in coinSellLimitOrder[coinString]:
+                # 매도 정보 확인
+                if "uuid" in coinSellLimitOrder[coinString][searchCount]:
+                    #슬랙 메시지
+                    post_message(myToken,"#coin", "매도 정보 확인" + str(searchCount))
+                    # 매도 정보가 있으면 매도주문 정보를 가져온다.
+                    sellLimitOrderState = upbit.get_order(coinSellLimitOrder[coinString][searchCount]["uuid"])["state"]
+                else:
+                    post_message(myToken,"#coin", "매도 정보 없음" + str(searchCount))
+                    sellLimitOrderState = "None" # 매도 정보가 없으면 "None" 처리
             else:
-                sellLimitOrderState = "None" # 매도 정보가 없으면 "None" 처리
+                coinSellLimitOrder[coinString][searchCount] = {}
                 
             # 매수가 되었는지 먼저 확인한다.
             if buyLimitOrderState == "done":
