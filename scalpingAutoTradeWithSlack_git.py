@@ -117,7 +117,7 @@ def scalping_trade(coinString, coin):
                         #슬랙 메시지
                         post_message(myToken,"#coin", "제일 상위 가격이 팔림" + str(searchCount))
                         # 매도 완료 시, 매도 정보를 초기화 한다.
-                        coinSellLimitOrder[coinString][searchCount] = 0
+                        coinSellLimitOrder[coinString][searchCount] = {}
                         # 매수 카운트 초기화
                         coinOrderCount[coinString] = 0
                         for j in range(2, count + 1): # 2 ~ count 까지
@@ -128,7 +128,7 @@ def scalping_trade(coinString, coin):
                         #슬랙 메시지
                         post_message(myToken,"#coin", "일반 위치의 가격이 팔림" + str(searchCount))
                         # 매도 완료 시, 매도 정보를 초기화 한다.
-                        coinSellLimitOrder[coinString][searchCount] = 0
+                        coinSellLimitOrder[coinString][searchCount] = {}
                         # 재매수 한다.
                         coinBuyLimitOrder[coinString][searchCount] = upbit.buy_limit_order("KRW-" + coin, coinOrderBidPrice[coinString][searchCount], (seed_1Base *0.9995) / coinOrderBidPrice[coinString][searchCount])
                 # 매도 주문 중이고, 첫 주문 건일 때, 매수 가격 -150보다 현재 매수 호가가 더 낮거나 같은지 비교한다.
