@@ -74,7 +74,7 @@ def scalping_trade(coinString, coin):
                     # 매수 정보가 없다는 건, 최초 1번 주문밖에 없음.
                     post_message(myToken,"#coin", "매수 정보 없음" + str(searchCount))
                     buyLimitOrderState = "done" # 1번은 매도 호가로 바로 매수하기 때문에 정보가 없다. (바로 완료됨)            
-            else
+            else:
                 coinBuyLimitOrder[coinString][searchCount] = {}
             
             if searchCount in coinSellLimitOrder[coinString]:
