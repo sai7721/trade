@@ -87,7 +87,7 @@ def scalping_trade(coinString, coin):
     if priceGap > 0:
         # 아직 주문한게 없고, 매도 호가가 minPrice 초과 & maxPrice 이하 일 때
         if coinOrderCount[coinString] == 0 and maxPrice >= coinAskPrice[coinString] > minPrice and cooldown:
-            post_message(myToken,"#coin", "아직 주문한게 없고, 매도 호가가 minPrice :" + str(maxPrice) + "maxPrice: " + str(minPrice) + " 이하 일 때")
+            post_message(myToken,"#coin", "아직 주문한게 없고, 매도 호가가 minPrice :" + str(minPrice) + "maxPrice: " + str(maxPrice) + " 이하 일 때")
             # 개수 내림 계산 (소수점이 너무 많으면 에러가 나는 듯)
             volume = math.floor((seed_1Base *0.9995) / coinAskPrice[coinString]) # 매수 수량
             price = coinAskPrice[coinString] * volume # 매수 가격
@@ -176,7 +176,7 @@ def scalping_trade(coinString, coin):
                                         post_message(myToken,"#coin", "coinBuyLimitOrder[coinString]에 j가 있는지 확인 - " + str(j))
                                         if "uuid" in coinBuyLimitOrder[coinString][j]:
                                             post_message(myToken,"#coin", "uuid 확인 - " + str(j))
-                                            if upbit.get_order(coinSellLimitOrder[coinString][searchCount]["uuid"])["state"] == "wait":
+                                            if upbit.get_order(coinBuyLimitOrder[coinString][j]["uuid"])["state"] == "wait":
                                                 post_message(myToken,"#coin", "매수 주문 중인지 확인 - " + str(j))
                                                 # 매수 주문을 취소한다. (매도 주문은 있을 수가 없음 제일 상위 가격이 팔렸으니..)
                                                 upbit.cancel_order(coinBuyLimitOrder[coinString][j]["uuid"])
