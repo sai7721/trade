@@ -15,13 +15,24 @@ def post_message(token, channel, text):
         data={"channel": channel,"text": text}
     )
 
-def get_balance(ticker):
+def get_avg_buy_price(ticker):
     """매수 평균가 조회"""
     balances = upbit.get_balances()
     for b in balances:
         if b['currency'] == ticker:
             if b['avg_buy_price'] is not None:
                 return float(b['avg_buy_price'])
+            else:
+                return 0
+    return 0
+    
+def get_balance(ticker):
+    """잔고 조회"""
+    balances = upbit.get_balances()
+    for b in balances:
+        if b['currency'] == ticker:
+            if b['balance'] is not None:
+                return float(b['balance'])
             else:
                 return 0
     return 0
@@ -96,11 +107,15 @@ def scalping_trade(coinString, coin):
                 sellLimitOrderState = ""
                 
                 if searchCount in coinBuyLimitOrder[coinString]:
-                    # 매수 정보 확인
+                    # 매수 정보 확인 ("uuid" 확인)
                     if "uuid" in coinBuyLimitOrder[coinString][searchCount]:
                         buyLimitOrderState = upbit.get_order(coinBuyLimitOrder[coinString][searchCount]["uuid"])["state"]
                     else:
-                        buyLimitOrderState = "done" # 1번은 매도 호가로 바로 매수하기 때문에 정보가 없다. (바로 완료됨)            
+                        # 현재 보유 수량이 주문 매수 수량 이상이면 (시장가로 사더라도 바로 갱신이 안될 수 도 있어서 한번 더 체크한다.)
+                        if searchCount == 1 and get_balance(coin) >= coinOrderBidVolume[coinString][searchCount]:
+                            buyLimitOrderState = "done" # 1번은 매도 호가로 바로 매수하기 때문에 정보가 없다.
+                        else:
+                            buyLimitOrderState = "None"
                 else:
                     coinBuyLimitOrder[coinString][searchCount] = {}
                 
@@ -150,11 +165,16 @@ def scalping_trade(coinString, coin):
                             coinSellLimitOrder[coinString][searchCount] = {}
                             # 매수 카운트 초기화
                             coinOrderCount[coinString] = 0
-                            for j in range(2, count + 1): # 2 ~ count 까지
-                                # 매수 주문을 취소한다. (매도 주문은 있을 수가 없음 제일 상위 가격이 팔렸으니..)
-                                upbit.cancel_order(coinBuyLimitOrder[coinString][j]["uuid"])
-                                # 매수 주문 내용 초기화
-                                coinBuyLimitOrder[coinString][j] = {}
+                            if count >= 2: # 구매건수가 2개 이상일 때
+                                for j in range(2, count + 1): # 2 ~ count 까지
+                                    # 매수 대기 중일 때
+                                    if j in coinBuyLimitOrder[coinString]:
+                                        if "uuid" not in coinBuyLimitOrder[coinString][j]:
+                                            if upbit.get_order(coinBuyLimitOrder[coinString][j]["uuid"])["state"] == "wait":
+                                                # 매수 주문을 취소한다. (매도 주문은 있을 수가 없음 제일 상위 가격이 팔렸으니..)
+                                                upbit.cancel_order(coinBuyLimitOrder[coinString][j]["uuid"])
+                                                # 매수 주문 내용 초기화
+                                                coinBuyLimitOrder[coinString][j] = {}
                         # 제일 상위 가격이 팔리지 않았을 때
                         else:
                             # 매도 완료 시, 매도 정보를 초기화 한다.
@@ -165,7 +185,7 @@ def scalping_trade(coinString, coin):
                     elif sellLimitOrderState == "wait" and searchCount == 1 and coinOrderBidPrice[coinString][1] - (priceGap * 20) >= coinBidPrice[coinString]:
                         #슬랙 메시지
                         post_message(myToken,"#coin", "손절 라인으로 들어옴 searchCount:" + str(searchCount))
-                        post_message(myToken,"#coin", "KRW-" + coin + ", 손절 매도가 : " + str(coinBidPrice[coinString]) + ", 매수 평균가 :" + str(get_balance(coin)))
+                        post_message(myToken,"#coin", "KRW-" + coin + ", 손절 매도가 : " + str(coinBidPrice[coinString]) + ", 매수 평균가 :" + str(get_avg_buy_price(coin)))
                         # 손절 쿨타임 설정
                         coinCooldown[coinString] = datetime.datetime.now()
                         OrderVolume = 0
