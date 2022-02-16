@@ -165,12 +165,11 @@ def scalping_trade(coinString, coin):
                                 for j in range(2, count + 1): # 2 ~ count 까지
                                     # 매수 대기 중일 때
                                     if j in coinBuyLimitOrder[coinString]:
-                                        if "uuid" not in coinBuyLimitOrder[coinString][j]:
-                                            if upbit.get_order(coinBuyLimitOrder[coinString][j]["uuid"])["state"] == "wait":
-                                                # 매수 주문을 취소한다. (매도 주문은 있을 수가 없음 제일 상위 가격이 팔렸으니..)
-                                                upbit.cancel_order(coinBuyLimitOrder[coinString][j]["uuid"])
-                                                # 매수 주문 내용 초기화
-                                                coinBuyLimitOrder[coinString][j] = {}
+                                        if "uuid" in coinBuyLimitOrder[coinString][j]:
+                                            # 매수 주문을 취소한다. (매도 주문은 있을 수가 없음 제일 상위 가격이 팔렸으니..)
+                                            upbit.cancel_order(coinBuyLimitOrder[coinString][j]["uuid"])
+                                            # 매수 주문 내용 초기화
+                                            coinBuyLimitOrder[coinString][j] = {}
                         # 제일 상위 가격이 팔리지 않았을 때
                         else:
                             # 매도 완료 시, 매도 정보를 초기화 한다.
@@ -184,17 +183,14 @@ def scalping_trade(coinString, coin):
                         post_message(myToken,"#coin", "KRW-" + coin + ", 손절 매도가 : " + str(coinBidPrice[coinString]) + ", 매수 평균가 :" + str(get_avg_buy_price(coin)))
                         # 손절 쿨타임 설정
                         coinCooldown[coinString] = datetime.datetime.now()
-                        OrderVolume = 0
                         for j in range(count): #  0 ~ count -1 까지
                             OrderCount = count - j # 확인할 숫자(큰 수부터 확인한다. 0 ~ count -1까지 뺀 숫자.)
                             # 매도 주문을 취소한다.
                             upbit.cancel_order(coinSellLimitOrder[coinString][OrderCount]["uuid"])
-                            # 매도 수량 합치기
-                            OrderVolume = OrderVolume + coinOrderBidVolume[coinString][OrderCount]
+                            # 현재 매수 호가로 매도 ==================================================
+                            upbit.sell_market_order("KRW-" + coin, coinOrderBidVolume[coinString][OrderCount]) # 주문 수량만큼 판매한다.
                             # 매도 정보를 초기화 한다.
                             coinSellLimitOrder[coinString][OrderCount] = {}
-                        # 현재 매수 호가로 매도 ====================================================================================================================
-                        upbit.sell_market_order("KRW-" + coin, OrderVolume) # 주문 수량만큼 판매한다.
 
 # 로그인
 upbit = pyupbit.Upbit(access, secret)
@@ -235,16 +231,16 @@ coinCooldown =  {'coin1': 0, 'coin2': 0, 'coin3': 0, 'coin4': 0, 'coin5': 0, 'co
 
 while True:
     try:
-        scalping_trade('coin1', coin1)
-        scalping_trade('coin2', coin2)
-        scalping_trade('coin3', coin3)
-        scalping_trade('coin4', coin4)
-        scalping_trade('coin5', coin5)
-        scalping_trade('coin6', coin6)
-        scalping_trade('coin7', coin7)
-        scalping_trade('coin8', coin8)
+        # scalping_trade('coin1', coin1)
+        # scalping_trade('coin2', coin2)
+        # scalping_trade('coin3', coin3)
+        # scalping_trade('coin4', coin4)
+        # scalping_trade('coin5', coin5)
+        # scalping_trade('coin6', coin6)
+        # scalping_trade('coin7', coin7)
+        # scalping_trade('coin8', coin8)
         scalping_trade('coin9', coin9)
-        scalping_trade('coin10', coin10)
+        # scalping_trade('coin10', coin10)
         time.sleep(1)
     except Exception as e:
         post_message(myToken,"#coin", e)
