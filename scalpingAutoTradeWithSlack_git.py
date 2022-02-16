@@ -111,11 +111,7 @@ def scalping_trade(coinString, coin):
                     if "uuid" in coinBuyLimitOrder[coinString][searchCount]:
                         buyLimitOrderState = upbit.get_order(coinBuyLimitOrder[coinString][searchCount]["uuid"])["state"]
                     else:
-                        # 현재 보유 수량이 주문 매수 수량 이상이면 (시장가로 사더라도 바로 갱신이 안될 수 도 있어서 한번 더 체크한다.)
-                        if searchCount == 1 and get_balance(coin) >= coinOrderBidVolume[coinString][searchCount]:
-                            buyLimitOrderState = "done" # 1번은 매도 호가로 바로 매수하기 때문에 정보가 없다.
-                        else:
-                            buyLimitOrderState = "None"
+                        buyLimitOrderState = "done" # 1번은 매도 호가로 바로 매수하기 때문에 정보가 없다. (바로 완료됨)
                 else:
                     coinBuyLimitOrder[coinString][searchCount] = {}
                 
